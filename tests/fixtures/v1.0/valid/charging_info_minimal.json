@@ -6,6 +6,7 @@
       "chargingStationInfoList": [
         {
           "chargingStationId": "urn:station:001",
+          "chargingStationStatus": "Available",
           "chargingPointInfoList": [
             {
               "chargingPointId": "urn:point:001",
