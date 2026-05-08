@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vdv463-validator"
-version = "3.0.2"
+version = "3.0.3"
 description = "Tool for validating VDV463 electric bus charging infrastructure messages"
 readme = "README.md"
 license = "Apache-2.0"

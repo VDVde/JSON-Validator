@@ -38,8 +38,11 @@ SCHEMAS = {
         "files": [
             "ProvideChargingInformationRequest.json",
             "ProvideChargingRequestsRequest.json",
+            "ProvideChargingStatusRequest.json",
             "ErrorResponse.json",
-            "BootNotificationRequest.json"
+            "BootNotificationRequest.json",
+            "HeartbeatRequest.json",
+            "StatusNotificationRequest.json"
         ]
     }
 }
