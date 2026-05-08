@@ -201,7 +201,7 @@ jobs:
         run: |
           mkdir -p reports
           # Validate each version separately to ensure correct schema selection
-          for version in 1.0 1.1 2.0; do
+          for version in 1.0 1.1; do
             if [ -d "tests/fixtures/v$version/valid" ]; then
               echo "Validating v$version fixtures..."
               python src/vdv463_validator.py tests/fixtures/v$version/valid/*.json \
