@@ -15,6 +15,9 @@ RUN addgroup -g 1000 validator \
 # Security: Set restrictive file permissions
 WORKDIR /home/validator/app
 
+# Ensure directory is owned by validator user
+RUN chown validator:validator /home/validator/app
+
 # Copy python dependencies first (better layer caching)
 COPY --chown=validator:validator pyproject.toml README.md ./
 COPY --chown=validator:validator requirements-docker.txt requirements.txt
