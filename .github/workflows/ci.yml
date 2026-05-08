@@ -192,6 +192,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Pre-download schemas
+        run: |
+          mkdir -p schemas/v1.0 schemas/v1.1 schemas/v2.0
+          python scripts/update_schemas.py
+
       - name: Validate fixtures (fail-level ${{ matrix.fail-level }})
         run: |
           mkdir -p reports
