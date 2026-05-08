@@ -144,15 +144,24 @@ For **trusted internal networks** without a login requirement, set `DISABLE_AUTH
 ### Install from Source
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/vdv463-validator.git
+git clone https://github.com/VDVde/JSON-Validator.git
 cd vdv463-validator
-pip install -r requirements.txt
+pip install .
 ```
 
-### Install Dependencies Only
+### Development Setup
 
 ```bash
-pip install jsonschema pyyaml
+pip install -e .[dev]
+pre-commit install
+```
+
+### Docker (Web UI)
+
+```bash
+pip install .[docker,web]
+# or use docker compose directly
+docker compose up -d
 ```
 
 ---
