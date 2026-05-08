@@ -1,0 +1,171 @@
+# =============================================================================
+# VDV463 Validator - GitHub Actions CI Workflow
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'schemas/**'
+      - 'rules/**'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint Job
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 mypy
+
+      - name: Lint with flake8
+        run: flake8 src/ tests/ --max-line-length=100 --statistics
+        continue-on-error: true
+
+      - name: Type check with mypy
+        run: mypy src/ --ignore-missing-imports
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Test Job
+  # ---------------------------------------------------------------------------
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ '3.10', '3.11', '3.12' ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest tests/ -v --cov=src --cov-report=xml --junitxml=pytest-results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: pytest-results.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'
+        with:
+          files: coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always() && matrix.python-version == '3.11'
+        with:
+          name: Pytest Results
+          path: pytest-results.xml
+          reporter: java-junit
+
+  # ---------------------------------------------------------------------------
+  # Validation Job
+  # ---------------------------------------------------------------------------
+  validate:
+    name: Validate Fixtures
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        fail-level: [ ERROR, WARNING ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate fixtures (fail-level ${{ matrix.fail-level }})
+        run: |
+          if [ -d "tests/fixtures" ] && find tests/fixtures -name "*.json" -path "*/valid/*" | grep -q .; then
+            python src/vdv463_validator.py tests/fixtures/*/valid/*.json \
+              --quiet \
+              --junit-xml validation-${{ matrix.fail-level }}.xml \
+              --fail-level ${{ matrix.fail-level }}
+          else
+            echo "No valid fixtures found, creating empty report"
+            echo '<?xml version="1.0" encoding="UTF-8"?><testsuites/>' > validation-${{ matrix.fail-level }}.xml
+          fi
+        continue-on-error: ${{ matrix.fail-level == 'WARNING' }}
+
+      - name: Publish Validation Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: VDV463 Validation (${{ matrix.fail-level }})
+          path: validation-${{ matrix.fail-level }}.xml
+          reporter: java-junit
+
+  # ---------------------------------------------------------------------------
+  # Build Job
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    needs: [ lint, test ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build package
+        run: python -m build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

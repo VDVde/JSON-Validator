@@ -1,0 +1,39 @@
+{
+  "depotInfoList": [
+    {
+      "depotId": "urn:depot:001",
+      "name": "Test Depot",
+      "chargingStationInfoList": [
+        {
+          "chargingStationId": "urn:station:001",
+          "chargingStationStatus": "InvalidStatus",
+          "chargingPointInfoList": [
+            {
+              "chargingPointId": "urn:point:001",
+              "chargingPointStatus": "WrongStatus",
+              "maxPower": "not-a-number"
+            },
+            {
+              "chargingPointId": 12345,
+              "chargingPointStatus": "Available"
+            }
+          ]
+        },
+        {
+          "chargingStationStatus": "Available",
+          "chargingPointInfoList": [
+            {
+              "chargingPointId": "urn:point:003",
+              "chargingPointStatus": "Available",
+              "maxPower": -100
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "depotId": "urn:depot:002"
+    }
+  ],
+  "unexpectedField": "This field should not be here"
+}

@@ -1,0 +1,143 @@
+# =============================================================================
+# VDV463 v1.1.0 - Full Custom Validation Rules
+# =============================================================================
+# Purpose: Comprehensive data quality and plausibility checks for VDV463 v1.1.0
+# Version: 1.1.0-custom-2024
+# =============================================================================
+
+settings:
+  strict_mode: true
+  allow_future_timestamps: true
+  max_future_hours: 72
+  timezone: "UTC"
+  default_severity: "ERROR"
+
+# -----------------------------------------------------------------------------
+# 1. Physical Value Ranges (Strict)
+# -----------------------------------------------------------------------------
+range_rules:
+  # Power (kW)
+  maxPower:
+    min: 1
+    max: 600
+    unit: "kW"
+    message: "maxPower ({value} kW) out of range [1, 600]"
+  
+  minPower:
+    min: 0
+    max: 150
+    unit: "kW"
+    message: "minPower ({value} kW) exceeds typical charging base [0, 150]"
+
+  requestedPower:
+    min: 0
+    max: 600
+    unit: "kW"
+    message: "requestedPower ({value} kW) out of range [0, 600]"
+
+  # State of Charge (%)
+  currentSoC:
+    min: 1
+    max: 100
+    unit: "%"
+    message: "currentSoC ({value}%) must be between 1 and 100"
+
+  targetSoC:
+    min: 10
+    max: 100
+    unit: "%"
+    message: "targetSoC ({value}%) below 10% is not allowed for charging requests"
+
+# -----------------------------------------------------------------------------
+# 2. Logic & Consistency Rules (Cross-Field)
+# -----------------------------------------------------------------------------
+cross_field_rules:
+  # Power Consistency
+  - id: "RULE-PWR-01"
+    name: "Power Range Integrity"
+    severity: "ERROR"
+    applies_to: ["ProvideChargingInformationRequest", "ProvideChargingRequestsRequest"]
+    condition:
+      fields: ["minPower", "maxPower"]
+      rule: "minPower <= maxPower"
+    message: "minPower ({minPower} kW) cannot be higher than maxPower ({maxPower} kW)"
+
+  - id: "RULE-PWR-02"
+    name: "Requested vs Max Power"
+    severity: "ERROR"
+    applies_to: ["ProvideChargingRequestsRequest"]
+    condition:
+      fields: ["requestedPower", "maxPower"]
+      rule: "requestedPower <= maxPower"
+    message: "requestedPower ({requestedPower} kW) exceeds maxPower limit ({maxPower} kW)"
+
+  # SoC Consistency
+  - id: "RULE-SOC-01"
+    name: "Positive Charging Delta"
+    severity: "WARNING"
+    applies_to: ["ProvideChargingRequestsRequest"]
+    condition:
+      fields: ["targetSoC", "currentSoC"]
+      rule: "targetSoC > currentSoC"
+    message: "targetSoC ({targetSoC}%) is equal to or less than currentSoC ({currentSoC}%)"
+
+  - id: "RULE-SOC-02"
+    name: "Minimum Target Buffer"
+    severity: "ERROR"
+    applies_to: ["ProvideChargingRequestsRequest"]
+    condition:
+      fields: ["minSoC", "targetSoC"]
+      rule: "minSoC <= targetSoC"
+    message: "minSoC ({minSoC}%) cannot be higher than targetSoC ({targetSoC}%)"
+
+  # Energy Plausibility
+  - id: "RULE-NRG-01"
+    name: "Energy Capacity Check"
+    severity: "ERROR"
+    applies_to: ["ProvideChargingRequestsRequest"]
+    condition:
+      fields: ["requestedEnergy", "batteryCapacity"]
+      rule: "requestedEnergy <= batteryCapacity"
+    message: "requestedEnergy ({requestedEnergy} kWh) exceeds total batteryCapacity ({batteryCapacity} kWh)"
+
+  # Temporal Logic
+  - id: "RULE-TIME-01"
+    name: "Operational Sequence"
+    severity: "ERROR"
+    applies_to: ["ProvideChargingRequestsRequest"]
+    condition:
+      fields: ["plannedDeparture", "plannedArrival"]
+      rule: "plannedDeparture > plannedArrival"
+    message: "plannedDeparture ({plannedDeparture}) must be after plannedArrival ({plannedArrival})"
+
+  - id: "RULE-TIME-02"
+    name: "Arrival Recency"
+    severity: "WARNING"
+    applies_to: ["ProvideChargingRequestsRequest"]
+    condition:
+      fields: ["plannedArrival"]
+      rule: "plannedArrival >= now() - timedelta(minutes=60)"
+    message: "plannedArrival ({plannedArrival}) is more than 60 minutes in the past"
+
+# -----------------------------------------------------------------------------
+# 3. Aggregated / Semantic Rules
+# -----------------------------------------------------------------------------
+semantic_rules:
+  - id: "SEM-01"
+    name: "Unique Vehicle Activity"
+    severity: "ERROR"
+    scope: "aggregate"
+    applies_to: ["ProvideChargingRequestsRequest"]
+    condition:
+      rule: "unique(vehicleId)"
+    message: "Duplicate active request for vehicleId: {vehicleId}"
+
+  - id: "SEM-02"
+    name: "Depot Load Limit"
+    severity: "WARNING"
+    scope: "aggregate"
+    applies_to: ["ProvideChargingRequestsRequest"]
+    condition:
+      aggregate: "sum(requestedPower)"
+      rule: "aggregate <= 2000"
+    message: "Total requested power ({aggregate} kW) exceeds safe depot transformer limit (2000 kW)"

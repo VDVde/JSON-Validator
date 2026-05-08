@@ -1,0 +1,29 @@
+{
+  "_description": "Test file with power-related cross-field violations",
+  "_violations": [
+    "PWR-001: minPower (200) exceeds maxPower (150)",
+    "PWR-002: requestedPower (300) exceeds charger maxPower (150)"
+  ],
+  "timestamp": "2025-01-15T10:30:00Z",
+  "senderId": "DEPOT_001",
+  "receiverId": "CMS_001",
+  "chargingRequestList": [
+    {
+      "requestId": "REQ-PWR-001",
+      "vehicleId": "BUS-001",
+      "vehicleType": "eCitaro",
+      "batteryCapacity": 292,
+      "currentSoC": 30,
+      "targetSoC": 90,
+      "requestedEnergy": 175,
+      "minPower": 200,
+      "maxPower": 150,
+      "requestedPower": 300,
+      "priority": 3,
+      "plannedArrival": "2025-01-15T18:00:00Z",
+      "plannedDeparture": "2025-01-16T05:00:00Z",
+      "chargingPointId": "CP-001",
+      "connectorType": "CCS2"
+    }
+  ]
+}

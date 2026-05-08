@@ -1,0 +1,19 @@
+{
+  "depotInfoList": [
+    {
+      "depotId": "urn:depot:001",
+      "name": "Central Bus Depot",
+      "chargingStationInfoList": [
+        {
+          "chargingStationId": "urn:station:001",
+          "chargingPointInfoList": [
+            {
+              "chargingPointId": "urn:point:001",
+              "chargingPointStatus": "Available"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

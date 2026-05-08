@@ -1,0 +1,44 @@
+{
+  "_description": "Test file with valid cross-field relationships",
+  "timestamp": "2025-01-15T10:30:00Z",
+  "senderId": "DEPOT_001",
+  "receiverId": "CMS_001",
+  "chargingRequestList": [
+    {
+      "requestId": "REQ-VALID-001",
+      "vehicleId": "BUS-042",
+      "vehicleType": "eCitaro",
+      "batteryCapacity": 292,
+      "currentSoC": 30,
+      "targetSoC": 90,
+      "minSoC": 80,
+      "requestedEnergy": 175,
+      "minPower": 50,
+      "maxPower": 150,
+      "requestedPower": 150,
+      "priority": 2,
+      "plannedArrival": "2025-01-15T18:00:00Z",
+      "plannedDeparture": "2025-01-16T05:30:00Z",
+      "chargingPointId": "CP-001",
+      "connectorType": "CCS2"
+    },
+    {
+      "requestId": "REQ-VALID-002",
+      "vehicleId": "BUS-087",
+      "vehicleType": "Lion's_City_E",
+      "batteryCapacity": 480,
+      "currentSoC": 15,
+      "targetSoC": 95,
+      "minSoC": 85,
+      "requestedEnergy": 384,
+      "minPower": 100,
+      "maxPower": 150,
+      "requestedPower": 150,
+      "priority": 1,
+      "plannedArrival": "2025-01-15T17:30:00Z",
+      "plannedDeparture": "2025-01-16T04:45:00Z",
+      "chargingPointId": "CP-002",
+      "connectorType": "CCS2"
+    }
+  ]
+}

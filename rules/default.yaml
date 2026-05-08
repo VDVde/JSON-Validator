@@ -1,0 +1,622 @@
+# =============================================================================
+# VDV463 Validation Configuration
+# =============================================================================
+#
+# This file defines validation rules for VDV463 messages:
+#   - ProvideChargingInformationRequest (Depot → Charging Management)
+#   - ProvideChargingRequestsRequest (Depot → Charging Management)
+#
+# Rule Types:
+#   - range: Simple min/max value checks
+#   - cross_field: Rules comparing multiple fields
+#   - conditional: Rules that apply only under certain conditions
+#   - temporal: Time-based consistency checks
+#   - semantic: Domain-specific plausibility checks
+#
+# Severity Levels:
+#   - ERROR:   Critical issues, invalid data (causes CI failure by default)
+#   - WARNING: Potential problems, should be reviewed (optional CI failure)
+#   - INFO:    Informational, recommendations (strictest CI mode only)
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Global Settings
+# -----------------------------------------------------------------------------
+settings:
+  strict_mode: false          # If true, warnings become errors
+  allow_future_timestamps: true
+  max_future_hours: 48        # Max hours into the future for planned times
+  timezone: "Europe/Berlin"
+
+  # Default severity for rules without explicit severity
+  default_severity: "WARNING"
+
+  # Severity level descriptions for documentation
+  severity_descriptions:
+    ERROR: "Critical issue - data is invalid or cannot be processed"
+    WARNING: "Potential problem - data is valid but may indicate an issue"
+    INFO: "Informational - recommendation or observation"
+
+# -----------------------------------------------------------------------------
+# Simple Value Range Rules
+# -----------------------------------------------------------------------------
+range_rules:
+
+  # Power values (in kW)
+  maxPower:
+    min: 0
+    max: 1000
+    unit: "kW"
+    message: "maxPower must be between 0 and 1000 kW"
+
+  minPower:
+    min: 0
+    max: 500
+    unit: "kW"
+    message: "minPower must be between 0 and 500 kW"
+
+  requestedPower:
+    min: 0
+    max: 1000
+    unit: "kW"
+    message: "requestedPower must be between 0 and 1000 kW"
+
+  currentPower:
+    min: 0
+    max: 1000
+    unit: "kW"
+    message: "currentPower must be between 0 and 1000 kW"
+
+  # Energy values (in kWh)
+  requestedEnergy:
+    min: 0
+    max: 1000
+    unit: "kWh"
+    message: "requestedEnergy must be between 0 and 1000 kWh"
+
+  batteryCapacity:
+    min: 0
+    max: 1000
+    unit: "kWh"
+    message: "batteryCapacity must be between 0 and 1000 kWh"
+
+  # State of Charge (in %)
+  currentSoC:
+    min: 0
+    max: 100
+    unit: "%"
+    message: "currentSoC must be between 0 and 100%"
+
+  targetSoC:
+    min: 0
+    max: 100
+    unit: "%"
+    message: "targetSoC must be between 0 and 100%"
+
+  minSoC:
+    min: 0
+    max: 100
+    unit: "%"
+    message: "minSoC must be between 0 and 100%"
+
+  # Duration values (in seconds)
+  chargingDuration:
+    min: 0
+    max: 86400        # 24 hours
+    unit: "seconds"
+    message: "chargingDuration must be between 0 and 86400 seconds (24h)"
+
+  estimatedDuration:
+    min: 0
+    max: 86400
+    unit: "seconds"
+    message: "estimatedDuration must be between 0 and 86400 seconds"
+
+  # Temperature (in °C)
+  batteryTemperature:
+    min: -40
+    max: 80
+    unit: "°C"
+    message: "batteryTemperature must be between -40 and 80°C"
+
+  ambientTemperature:
+    min: -50
+    max: 60
+    unit: "°C"
+    message: "ambientTemperature must be between -50 and 60°C"
+
+  # Voltage and Current
+  voltage:
+    min: 0
+    max: 1000
+    unit: "V"
+    message: "voltage must be between 0 and 1000V"
+
+  current:
+    min: 0
+    max: 500
+    unit: "A"
+    message: "current must be between 0 and 500A"
+
+  # Priority
+  priority:
+    min: 1
+    max: 10
+    unit: ""
+    message: "priority must be between 1 (highest) and 10 (lowest)"
+
+
+# -----------------------------------------------------------------------------
+# Cross-Field Validation Rules
+# -----------------------------------------------------------------------------
+cross_field_rules:
+
+  # ---------------------------------------------------------------------------
+  # Power Consistency
+  # ---------------------------------------------------------------------------
+
+  - id: "PWR-001"
+    name: "minPower must not exceed maxPower"
+    description: "The minimum charging power cannot be greater than the maximum"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "minPower", "maxPower" ]
+      rule: "minPower <= maxPower"
+    message: "minPower ({minPower} kW) exceeds maxPower ({maxPower} kW)"
+
+  - id: "PWR-002"
+    name: "requestedPower within charger limits"
+    description: "Requested power must not exceed the charging point's maximum"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "requestedPower", "chargingPoint.maxPower" ]
+      rule: "requestedPower <= chargingPoint.maxPower"
+    message: "requestedPower ({requestedPower} kW) exceeds charger capacity ({chargingPoint.maxPower} kW)"
+
+  - id: "PWR-003"
+    name: "currentPower within limits"
+    description: "Current charging power should not exceed maximum power"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "currentPower", "maxPower" ]
+      rule: "currentPower <= maxPower * 1.05"  # 5% tolerance
+    message: "currentPower ({currentPower} kW) exceeds maxPower ({maxPower} kW)"
+
+  # ---------------------------------------------------------------------------
+  # State of Charge (SoC) Consistency
+  # ---------------------------------------------------------------------------
+
+  - id: "SOC-001"
+    name: "targetSoC must exceed currentSoC"
+    description: "Target SoC should be higher than current SoC for charging"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "targetSoC", "currentSoC" ]
+      rule: "targetSoC > currentSoC"
+    message: "targetSoC ({targetSoC}%) is not greater than currentSoC ({currentSoC}%)"
+
+  - id: "SOC-002"
+    name: "minSoC must not exceed targetSoC"
+    description: "Minimum acceptable SoC cannot exceed target SoC"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "minSoC", "targetSoC" ]
+      rule: "minSoC <= targetSoC"
+    message: "minSoC ({minSoC}%) exceeds targetSoC ({targetSoC}%)"
+
+  - id: "SOC-002B"
+    name: "minTargetSoc must not exceed maxTargetSoc"
+    description: "Minimum target SoC cannot exceed maximum target SoC"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "chargingRequestData.minTargetSoc", "chargingRequestData.maxTargetSoc" ]
+      rule: "chargingRequestData.minTargetSoc <= chargingRequestData.maxTargetSoc"
+    message: "minTargetSoc ({chargingRequestData.minTargetSoc}%) exceeds maxTargetSoc ({chargingRequestData.maxTargetSoc}%)"
+
+  - id: "SOC-003"
+    name: "currentSoC must not exceed 100% minus buffer"
+    description: "If currentSoC is very high, charging request may be unnecessary"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "currentSoC" ]
+      rule: "currentSoC < 95"
+    message: "currentSoC ({currentSoC}%) is already very high - charging may not be needed"
+
+  # ---------------------------------------------------------------------------
+  # Energy Plausibility
+  # ---------------------------------------------------------------------------
+
+  - id: "NRG-001"
+    name: "requestedEnergy plausibility"
+    description: "Requested energy should match SoC delta and battery capacity"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "requestedEnergy", "batteryCapacity", "currentSoC", "targetSoC" ]
+      rule: |
+        expectedEnergy = batteryCapacity * (targetSoC - currentSoC) / 100
+        abs(requestedEnergy - expectedEnergy) <= expectedEnergy * 0.15
+      tolerance: 0.15  # 15% tolerance for losses/efficiency
+    message: "requestedEnergy ({requestedEnergy} kWh) does not match expected energy based on SoC delta"
+
+  - id: "NRG-002"
+    name: "requestedEnergy within battery capacity"
+    description: "Cannot request more energy than the battery can hold"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "requestedEnergy", "batteryCapacity", "currentSoC" ]
+      rule: "requestedEnergy <= batteryCapacity * (100 - currentSoC) / 100 * 1.1"
+    message: "requestedEnergy ({requestedEnergy} kWh) exceeds remaining battery capacity"
+
+  # ---------------------------------------------------------------------------
+  # Temporal Consistency
+  # ---------------------------------------------------------------------------
+
+  - id: "TMP-001"
+    name: "plannedDeparture after plannedArrival"
+    description: "Departure time must be after arrival time"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "plannedDeparture", "plannedArrival" ]
+      rule: "plannedDeparture > plannedArrival"
+    message: "plannedDeparture ({plannedDeparture}) is before plannedArrival ({plannedArrival})"
+
+  - id: "TMP-002"
+    name: "chargingEndTime after chargingStartTime"
+    description: "Charging end time must be after start time"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest", "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "chargingEndTime", "chargingStartTime" ]
+      rule: "chargingEndTime > chargingStartTime"
+    message: "chargingEndTime is before chargingStartTime"
+
+  - id: "TMP-003"
+    name: "Sufficient time for charging"
+    description: "Available time window should be sufficient to charge the requested energy"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "plannedDeparture", "plannedArrival", "requestedEnergy", "maxPower" ]
+      rule: |
+        availableHours = (plannedDeparture - plannedArrival).total_seconds() / 3600
+        minRequiredHours = requestedEnergy / maxPower
+        availableHours >= minRequiredHours * 0.9
+    message: "Time window may be insufficient: {availableHours}h available, ~{minRequiredHours}h needed"
+
+  - id: "TMP-004"
+    name: "Timestamps not in distant past"
+    description: "Planned times should not be more than 1 hour in the past"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "plannedArrival" ]
+      rule: "plannedArrival >= now() - timedelta(hours=1)"
+    message: "plannedArrival ({plannedArrival}) is in the past"
+
+  - id: "TMP-005"
+    name: "Timestamps not too far in future"
+    description: "Planned times should not be more than 48 hours in the future"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "plannedDeparture" ]
+      rule: "plannedDeparture <= now() + timedelta(hours=48)"
+    message: "plannedDeparture ({plannedDeparture}) is more than 48 hours in the future"
+
+  # ---------------------------------------------------------------------------
+  # Duration Plausibility
+  # ---------------------------------------------------------------------------
+
+  - id: "DUR-001"
+    name: "estimatedDuration plausibility"
+    description: "Estimated charging duration should match energy/power calculation"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "estimatedDuration", "requestedEnergy", "requestedPower" ]
+      rule: |
+        expectedDuration = (requestedEnergy / requestedPower) * 3600  # seconds
+        abs(estimatedDuration - expectedDuration) <= expectedDuration * 0.2
+      tolerance: 0.2
+    message: "estimatedDuration ({estimatedDuration}s) does not match energy/power calculation"
+
+  - id: "DUR-002"
+    name: "chargingDuration within time window"
+    description: "Requested charging duration should fit within available time"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "chargingDuration", "plannedDeparture", "plannedArrival" ]
+      rule: |
+        availableSeconds = (plannedDeparture - plannedArrival).total_seconds()
+        chargingDuration <= availableSeconds
+    message: "chargingDuration ({chargingDuration}s) exceeds available time window"
+
+  # ---------------------------------------------------------------------------
+  # Charging Point Consistency
+  # ---------------------------------------------------------------------------
+
+  - id: "CPT-001"
+    name: "Charging point status consistency"
+    description: "If status is 'Charging', currentPower should be > 0"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "status", "currentPower" ]
+      rule: "status != 'Charging' or currentPower > 0"
+    message: "Status is 'Charging' but currentPower is 0"
+
+  - id: "CPT-002"
+    name: "Charging point availability"
+    description: "If status is 'Available', no vehicle should be connected"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "status", "connectedVehicleId" ]
+      rule: "status != 'Available' or connectedVehicleId is None"
+    message: "Status is 'Available' but a vehicle is connected"
+
+  - id: "CPT-003"
+    name: "Connector type compatibility"
+    description: "Vehicle connector type should match charging point connector"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "vehicle.connectorType", "chargingPoint.connectorType" ]
+      rule: "vehicle.connectorType == chargingPoint.connectorType"
+    message: "Vehicle connector ({vehicle.connectorType}) incompatible with charging point ({chargingPoint.connectorType})"
+
+  # ---------------------------------------------------------------------------
+  # Vehicle Consistency
+  # ---------------------------------------------------------------------------
+
+  - id: "VHC-001"
+    name: "Vehicle battery capacity consistency"
+    description: "Reported battery capacity should match vehicle type specifications"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "batteryCapacity", "vehicleType" ]
+      rule: "batteryCapacity in KNOWN_BATTERY_CAPACITIES.get(vehicleType, range(50, 500))"
+    known_capacities:
+      "eCitaro": [ 243, 292, 441 ]
+      "Urbino12_electric": [ 240, 350 ]
+      "Lion's_City_E": [ 480 ]
+    message: "batteryCapacity ({batteryCapacity} kWh) unusual for vehicle type {vehicleType}"
+
+  - id: "VHC-002"
+    name: "Vehicle maxChargingPower consistency"
+    description: "Vehicle's max charging power should not exceed typical limits"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "vehicle.maxChargingPower", "chargingType" ]
+      rule: |
+        if chargingType == "DC":
+          vehicle.maxChargingPower <= 450
+        elif chargingType == "AC":
+          vehicle.maxChargingPower <= 43
+        else:
+          True
+    message: "vehicle.maxChargingPower ({vehicle.maxChargingPower} kW) exceeds typical limits for {chargingType}"
+
+  # ---------------------------------------------------------------------------
+  # Priority and Scheduling
+  # ---------------------------------------------------------------------------
+
+  - id: "PRI-001"
+    name: "High priority with low SoC"
+    description: "Vehicles with very low SoC should have high priority"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "priority", "currentSoC" ]
+      rule: "currentSoC > 10 or priority <= 3"
+    message: "Vehicle has critical SoC ({currentSoC}%) but low priority ({priority})"
+
+  - id: "PRI-002"
+    name: "Urgent departure with low priority"
+    description: "Vehicles departing soon should have higher priority"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "priority", "plannedDeparture" ]
+      rule: |
+        hoursUntilDeparture = (plannedDeparture - now()).total_seconds() / 3600
+        hoursUntilDeparture > 2 or priority <= 3
+    message: "Vehicle departing in <2h but has low priority ({priority})"
+
+
+# -----------------------------------------------------------------------------
+# Conditional Rules (apply only under specific circumstances)
+# -----------------------------------------------------------------------------
+conditional_rules:
+
+  - id: "CND-001"
+    name: "Preconditioning temperature check"
+    description: "If preconditioning is requested, battery temperature should be provided"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    when:
+      field: "preconditioningRequested"
+      equals: true
+    then:
+      required_fields: [ "batteryTemperature", "targetTemperature" ]
+    message: "Preconditioning requested but temperature data missing"
+
+  - id: "CND-002"
+    name: "Opportunity charging constraints"
+    description: "Opportunity charging should have short duration and high power"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    when:
+      field: "chargingType"
+      equals: "opportunity"
+    then:
+      rules:
+        - "requestedPower >= 150"  # kW
+        - "chargingDuration <= 1800"  # 30 minutes
+    message: "Opportunity charging should use high power (>=150kW) and short duration (<=30min)"
+
+  - id: "CND-003"
+    name: "Overnight charging expectations"
+    description: "Overnight charging should target high SoC"
+    severity: "INFO"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    when:
+      field: "chargingDuration"
+      greater_than: 21600  # 6 hours
+    then:
+      rules:
+        - "targetSoC >= 90"
+    message: "Long charging session but targetSoC ({targetSoC}%) is below 90%"
+
+
+# -----------------------------------------------------------------------------
+# Informational Rules (INFO severity)
+# -----------------------------------------------------------------------------
+info_rules:
+
+  - id: "INF-001"
+    name: "Optimal charging window"
+    description: "Inform about optimal off-peak charging times"
+    severity: "INFO"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "plannedArrival" ]
+      rule: |
+        hour = plannedArrival.hour
+        hour >= 22 or hour <= 6
+    message: "Charging scheduled during off-peak hours (22:00-06:00) - optimal for grid"
+
+  - id: "INF-002"
+    name: "High efficiency charging"
+    description: "SoC range 20-80% is most efficient for battery health"
+    severity: "INFO"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "currentSoC", "targetSoC" ]
+      rule: "currentSoC >= 20 and targetSoC <= 80"
+    message: "Charging within optimal SoC range (20-80%) for battery longevity"
+    invert: true  # Only show if NOT in optimal range
+
+  - id: "INF-003"
+    name: "Large energy request"
+    description: "Flag large energy requests for load management awareness"
+    severity: "INFO"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "requestedEnergy" ]
+      rule: "requestedEnergy > 200"
+    message: "Large energy request ({requestedEnergy} kWh) - consider load management"
+
+  - id: "INF-004"
+    name: "Vehicle type documentation"
+    description: "Unknown vehicle type - consider adding to known types"
+    severity: "INFO"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "vehicleType" ]
+      rule: "vehicleType not in KNOWN_VEHICLE_TYPES"
+    message: "Vehicle type '{vehicleType}' not in known types list"
+
+  - id: "INF-005"
+    name: "Schema version detected"
+    description: "Inform about auto-detected schema version"
+    severity: "INFO"
+    scope: "message"
+    applies_to: [ "ProvideChargingInformationRequest", "ProvideChargingRequestsRequest" ]
+    auto_generated: true
+    message: "Auto-detected schema version: {detected_version}"
+
+
+# -----------------------------------------------------------------------------
+# Semantic/Domain-Specific Rules
+# -----------------------------------------------------------------------------
+semantic_rules:
+
+  - id: "SEM-001"
+    name: "Depot capacity check"
+    description: "Total requested power should not exceed depot transformer capacity"
+    severity: "ERROR"
+    scope: "aggregate"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      aggregate: "sum(requestedPower)"
+      rule: "aggregate <= depot.maxPowerCapacity"
+    message: "Total requested power ({aggregate} kW) exceeds depot capacity ({depot.maxPowerCapacity} kW)"
+
+  - id: "SEM-002"
+    name: "Simultaneous charging limit"
+    description: "Number of simultaneous charging requests should not exceed available chargers"
+    severity: "ERROR"
+    scope: "aggregate"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      aggregate: "count(status='Requested')"
+      rule: "aggregate <= depot.availableChargers"
+    message: "More charging requests ({aggregate}) than available chargers ({depot.availableChargers})"
+
+  - id: "SEM-003"
+    name: "Vehicle ID uniqueness"
+    description: "Each vehicle should only have one active charging request"
+    severity: "ERROR"
+    scope: "aggregate"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      rule: "unique(vehicleId)"
+    message: "Duplicate charging request for vehicle {vehicleId}"
+
+
+# -----------------------------------------------------------------------------
+# Custom Warning Thresholds
+# -----------------------------------------------------------------------------
+warning_thresholds:
+
+  low_soc_warning: 20        # Warn if currentSoC below this
+  high_power_warning: 350    # Warn if requestedPower above this (kW)
+  long_duration_warning: 28800  # Warn if duration above 8 hours (seconds)
+  short_turnaround_warning: 1800  # Warn if time until departure < 30 min
+
+
+# -----------------------------------------------------------------------------
+# Known Vehicle Types (for validation reference)
+# -----------------------------------------------------------------------------
+known_vehicle_types:
+  - id: "eCitaro"
+    manufacturer: "Mercedes-Benz"
+    battery_capacities: [ 243, 292, 441 ]
+    max_charging_power: 150
+    connector_types: [ "CCS2", "Pantograph" ]
+
+  - id: "Urbino12_electric"
+    manufacturer: "Solaris"
+    battery_capacities: [ 240, 350 ]
+    max_charging_power: 150
+    connector_types: [ "CCS2", "Pantograph" ]
+
+  - id: "Lion's_City_E"
+    manufacturer: "MAN"
+    battery_capacities: [ 480, 640 ]
+    max_charging_power: 150
+    connector_types: [ "CCS2", "Pantograph" ]
+
+# -----------------------------------------------------------------------------
+# Known Connector Types
+# -----------------------------------------------------------------------------
+known_connector_types:
+  - "CCS2"
+  - "Pantograph"          # OppCharge (overhead)
+  - "Pantograph_bottom"   # Underbody pantograph
+  - "AC_Type2"

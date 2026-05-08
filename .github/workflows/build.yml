@@ -1,0 +1,619 @@
+# =============================================================================
+# VDV463 Validator - Windows Build Workflow (Triggered)
+# =============================================================================
+# Builds a Windows executable using PyInstaller and creates an installer
+# with Inno Setup. Automatically uploads to GitHub Releases on tags.
+#
+# Triggers:
+# - Push to main/develop branches
+# - Git tags matching v*.*.* (e.g., v1.0.0, v2.1.3)
+# - Manual workflow dispatch
+#
+# Artifacts:
+# - Latest Release: Updated on every successful main branch build
+# - Versioned Release: Created for each tag (v*.*.*)
+# =============================================================================
+
+name: Windows Build
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'UI/**'
+      - 'schemas/**'
+      - 'rules/**'
+      - 'media/**'
+      - 'main.spec'
+      - 'installer.iss'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/build.yml'
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*.*.*'
+    paths:
+      - 'src/**'
+      - 'UI/**'
+      - 'schemas/**'
+      - 'rules/**'
+      - 'media/**'
+      - 'main.spec'
+      - 'installer.iss'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a release (even without tag)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Security Scan with GuardDog
+  # Only runs on release tags to reduce CI costs
+  # ---------------------------------------------------------------------------
+  security-scan:
+    name: Security Scan (GuardDog)
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install GuardDog
+        run: |
+          python -m pip install --upgrade pip
+          pip install guarddog
+
+      - name: Scan requirements.txt for malicious packages
+        run: |
+          echo "🔍 Scanning requirements.txt with GuardDog..."
+          guarddog pypi verify requirements.txt --output-format=sarif > guarddog-results.sarif || SCAN_EXIT=$?
+          
+          # Also output human-readable format
+          echo ""
+          echo "📋 Detailed Scan Results:"
+          guarddog pypi verify requirements.txt || true
+          
+          # Check if any issues were found
+          if [ "${SCAN_EXIT:-0}" -ne 0 ]; then
+            echo ""
+            echo "❌ GuardDog found suspicious packages in requirements.txt!"
+            echo "Please review the packages and their sources carefully."
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ No suspicious packages found in requirements.txt"
+
+      - name: Scan requirements-dev.txt for malicious packages
+        if: hashFiles('requirements-dev.txt') != ''
+        run: |
+          echo "🔍 Scanning requirements-dev.txt with GuardDog..."
+          guarddog pypi verify requirements-dev.txt --output-format=sarif > guarddog-dev-results.sarif || SCAN_EXIT=$?
+          
+          # Also output human-readable format
+          echo ""
+          echo "📋 Detailed Scan Results:"
+          guarddog pypi verify requirements-dev.txt || true
+          
+          # Check if any issues were found
+          if [ "${SCAN_EXIT:-0}" -ne 0 ]; then
+            echo ""
+            echo "❌ GuardDog found suspicious packages in requirements-dev.txt!"
+            echo "Please review the packages and their sources carefully."
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ No suspicious packages found in requirements-dev.txt"
+
+      # Note: SARIF upload requires GitHub Advanced Security (code scanning)
+      # If not available, GuardDog results are still shown in the job logs above
+      # Uncomment the following step if your repository has code scanning enabled:
+      #
+      # - name: Upload GuardDog SARIF results
+      #   uses: github/codeql-action/upload-sarif@v4
+      #   if: |
+      #     always() && (
+      #       github.event_name != 'pull_request' ||
+      #       github.event.pull_request.head.repo.fork == false
+      #     )
+      #   continue-on-error: true
+      #   with:
+      #     sarif_file: guarddog-results.sarif
+      #     category: guarddog
+
+  # ---------------------------------------------------------------------------
+  # Build Windows Executable
+  # ---------------------------------------------------------------------------
+  build-windows:
+    name: Build Windows Executable
+    runs-on: windows-2022
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt Pillow
+          pip install pyinstaller pillow
+
+      - name: Download JSON Schemas
+        run: |
+          python scripts/update_schemas.py
+        shell: pwsh
+
+      - name: Convert PNG to ICO (if needed)
+        run: |
+          # Check if logo.ico exists, if not create from logo.png using Pillow
+          if (-not (Test-Path "media\logo.ico")) {
+            if (Test-Path "media\logo.png") {
+              Write-Host "Converting logo.png to logo.ico..."
+              python -c "from PIL import Image; img = Image.open('media/logo.png'); img.save('media/logo.ico', format='ICO', sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)])"
+              Write-Host "Created logo.ico"
+            } else {
+              Write-Host "No logo.png found, will use default icon"
+            }
+          } else {
+            Write-Host "logo.ico already exists"
+          }
+        shell: pwsh
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller main.spec --noconfirm --clean
+        shell: pwsh
+
+      - name: Verify build output
+        run: |
+          if (Test-Path "dist\main\VDV463Validator.exe") {
+            Write-Host "✓ Build successful: VDV463Validator.exe created"
+            Get-ChildItem -Path "dist\main" -Recurse | Measure-Object | Select-Object -ExpandProperty Count
+          } else {
+            Write-Host "✗ Build failed: VDV463Validator.exe not found"
+            Get-ChildItem -Path "dist" -Recurse -ErrorAction SilentlyContinue
+            exit 1
+          }
+        shell: pwsh
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: windows-build
+          path: dist/main/
+          retention-days: 3
+
+  # ---------------------------------------------------------------------------
+  # Create Installer with Inno Setup
+  # ---------------------------------------------------------------------------
+  create-installer:
+    name: Create Windows Installer
+    runs-on: windows-2022
+    needs: build-windows
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: windows-build
+          path: dist/main/
+
+      - name: Verify downloaded artifacts
+        run: |
+          Write-Host "Checking dist/main/ contents:"
+          Get-ChildItem -Path "dist\main" -Recurse | Select-Object FullName
+          if (-not (Test-Path "dist\main\VDV463Validator.exe")) {
+            Write-Host "ERROR: VDV463Validator.exe not found in artifacts"
+            exit 1
+          }
+        shell: pwsh
+
+      - name: Install Inno Setup
+        run: |
+          # Download and install Inno Setup
+          $innoSetupUrl = "https://jrsoftware.org/download.php/is.exe"
+          
+          $installerPath = "$env:TEMP\innosetup-installer.exe"
+          Write-Host "Downloading Inno Setup..."
+          
+          $maxAttempts = 3
+          $attempt = 1
+          while ($attempt -le $maxAttempts) {
+            try {
+              Invoke-WebRequest -Uri $innoSetupUrl -OutFile $installerPath -UseBasicParsing
+              break
+            } catch {
+              if ($attempt -eq $maxAttempts) { throw }
+              Start-Sleep -Seconds 5
+              $attempt++
+            }
+          }
+          
+          Write-Host "Installing Inno Setup..."
+          Start-Process -FilePath $installerPath -Args "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+          # Add to PATH
+          $env:PATH = "C:\Program Files (x86)\Inno Setup 6;$env:PATH"
+          echo "C:\Program Files (x86)\Inno Setup 6" >> $env:GITHUB_PATH
+        shell: pwsh
+
+      - name: Get version from tag or pyproject.toml
+        id: version
+        run: |
+          if ("${{ github.ref }}" -like "refs/tags/v*") {
+            $version = "${{ github.ref_name }}".TrimStart('v')
+          } else {
+            # Extract version from pyproject.toml
+            $content = Get-Content "pyproject.toml" -Raw
+            if ($content -match 'version\s*=\s*"([^"]+)"') {
+              $version = $matches[1]
+            } else {
+              $version = "0.0.0"
+            }
+          }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Version: $version"
+        shell: pwsh
+
+      - name: Build installer with Inno Setup
+        run: |
+          iscc /DMyAppVersion="${{ steps.version.outputs.version }}" /O"Output" installer.iss
+        shell: pwsh
+
+      - name: List installer output
+        run: |
+          Write-Host "Installer output:"
+          Get-ChildItem -Path "Output" -Recurse
+        shell: pwsh
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: windows-installer
+          path: Output/*.exe
+          retention-days: 3
+
+  # ---------------------------------------------------------------------------
+  # Create GitHub Release (on tags)
+  # ---------------------------------------------------------------------------
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [ create-installer, create-portable ]
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+    permissions:
+      contents: write
+      id-token: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Download installer artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: windows-installer
+          path: installer/
+
+      - name: Download portable ZIP artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: windows-portable
+          path: portable/
+
+      - name: Download build artifact (EXE)
+        uses: actions/download-artifact@v5
+        with:
+          name: windows-build
+          path: build/
+
+      - name: Get version from tag
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="dev-$(date +%Y%m%d-%H%M%S)"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Prepare release files
+        run: |
+          set -euo pipefail
+          mkdir -p release-files
+
+          echo "DEBUG: Listing all downloaded artifacts recursively:"
+          ls -R
+
+          # enable nullglob
+          shopt -s nullglob
+
+          echo "--- Processing Installer ---"
+          # Find any installer exe in installer/ directory
+          # We expect something like Output/VDV463-Validator-Setup-*.exe
+          for f in installer/**/*.exe; do
+            echo "Found installer: $f"
+            cp -v "$f" release-files/ || true
+          done
+          # Fallback: check flat installer/ folder
+          for f in installer/*.exe; do
+            echo "Found installer (flat): $f"
+            cp -v "$f" release-files/ || true
+          done
+
+          echo "--- Processing Portable ZIP ---"
+          # Find any zip in portable/ directory
+          for f in portable/**/*.zip; do
+            echo "Found portable zip: $f"
+            cp -v "$f" release-files/ || true
+          done
+          # Fallback: check flat portable/ folder
+          for f in portable/*.zip; do
+            echo "Found portable zip (flat): $f"
+            cp -v "$f" release-files/ || true
+          done
+
+          echo "--- Processing Standalone EXE ---"
+          # Find the main executable in build/ directory (recursive)
+          # Exclude the setup installer if it accidentally ended up here
+          # We look for VDV463Validator.exe (case insensitive)
+          exe_path=$(find build -type f -iname 'VDV463Validator.exe' | head -n 1 || true)
+          
+          if [ -n "$exe_path" ]; then
+            echo "Found standalone executable at: $exe_path"
+            cp -v "$exe_path" "release-files/VDV463Validator-${{ steps.version.outputs.version }}.exe"
+          else
+            echo "WARNING: VDV463Validator.exe not found under build/ directory!"
+            echo "Contents of build/:"
+            ls -R build/ || true
+          fi
+
+          echo ""
+          echo "--- Final Release Files ---"
+          ls -la release-files/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: VDV463 Validator v${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            ## VDV463 Validator v${{ steps.version.outputs.version }}
+            
+            ### 📦 Downloads
+            
+            | File | Description |
+            |------|-------------|
+            | `VDV463-Validator-Setup-*.exe` | Windows installer with Start Menu and Desktop shortcuts |
+            | `VDV463Validator-*.exe` | Standalone Windows executable |
+            | `VDV463-Validator-*-portable.zip` | Portable ZIP (extract and run) |
+            
+            ### ✨ Features
+            - PyQt6-based GUI for validating VDV463 JSON messages
+            - Support for multiple schema versions (1.0, 1.1, 2.0)
+            - Configurable validation rules
+            - Multi-language support (German/English)
+            
+            ### 📋 Requirements
+            - Windows 10 or later
+            
+            ---
+            ### 📝 What's Changed
+          files: |
+            release-files/*
+          draft: false
+          prerelease: ${{ contains(github.ref, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------------------
+  # Portable ZIP (optional, for users who don't want installer)
+  # ---------------------------------------------------------------------------
+  create-portable:
+    name: Create Portable ZIP
+    runs-on: windows-2022
+    needs: build-windows
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: windows-build
+          path: dist/main/
+
+      - name: Get version
+        id: version
+        run: |
+          if ("${{ github.ref }}" -like "refs/tags/v*") {
+            $version = "${{ github.ref_name }}".TrimStart('v')
+          } else {
+            # Use short commit hash for non-tag builds
+            $version = "latest-${{ github.sha }}".Substring(0, 20)
+          }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Version: $version"
+        shell: pwsh
+
+      - name: Create portable ZIP
+        run: |
+          $zipName = "VDV463-Validator-${{ steps.version.outputs.version }}-portable.zip"
+          Compress-Archive -Path "dist\main\*" -DestinationPath $zipName
+          Write-Host "Created: $zipName"
+        shell: pwsh
+
+      - name: Upload portable ZIP artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: windows-portable
+          path: "*.zip"
+          retention-days: 3
+
+  # ---------------------------------------------------------------------------
+  # Update Latest Release (on main branch, non-tag pushes)
+  # ---------------------------------------------------------------------------
+  update-latest:
+    name: Update Latest Release
+    runs-on: ubuntu-latest
+    needs: [ build-windows, create-portable ]
+    if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+      id-token: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: windows-build
+          path: build/
+
+      - name: Download portable ZIP
+        uses: actions/download-artifact@v5
+        with:
+          name: windows-portable
+          path: portable/
+
+      - name: Prepare latest release files
+        run: |
+          set -euo pipefail
+          mkdir -p release-files
+
+          echo "DEBUG: Listing all downloaded artifacts recursively:"
+          ls -R
+
+          # enable nullglob
+          shopt -s nullglob
+
+          echo "--- Processing Portable ZIP ---"
+          # Find any zip in portable/ directory
+          zip_found=false
+          for f in portable/**/*.zip; do
+            echo "Found portable zip: $f"
+            cp -v "$f" release-files/VDV463-Validator-latest-portable.zip || true
+            zip_found=true
+            break # Take the first one
+          done
+          
+          if [ "$zip_found" = false ]; then
+             for f in portable/*.zip; do
+                echo "Found portable zip (flat): $f"
+                cp -v "$f" release-files/VDV463-Validator-latest-portable.zip || true
+                break
+             done
+          fi
+
+          echo "--- Processing Standalone EXE ---"
+          # Find the main executable in build/ directory (recursive)
+          exe_path=$(find build -type f -iname 'VDV463Validator.exe' | head -n 1 || true)
+          
+          if [ -n "$exe_path" ]; then
+            echo "Found standalone executable at: $exe_path"
+            cp -v "$exe_path" "release-files/VDV463Validator-latest.exe"
+          else
+            echo "WARNING: VDV463Validator.exe not found under build/ directory!"
+            echo "Contents of build/:"
+            ls -R build/ || true
+          fi
+
+          echo ""
+          echo "--- Final Release Files ---"
+          ls -la release-files/
+
+      - name: Get current date and commit info
+        id: info
+        run: |
+          echo "date=$(date +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_OUTPUT
+          echo "short_sha=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+
+      - name: Delete existing latest release
+        run: |
+          gh release delete latest --yes || true
+          git push origin :refs/tags/latest || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create/Update Latest Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Latest Development Build"
+          tag_name: latest
+          body: |
+            ## 🚀 Latest Development Build
+            
+            **Build Date:** ${{ steps.info.outputs.date }}
+            **Commit:** ${{ steps.info.outputs.short_sha }} (`${{ github.sha }}`)
+            **Branch:** main
+            
+            ---
+            
+            ### ⚠️ Development Build Notice
+            This is an automatically updated release containing the latest successful build from the main branch.
+            For stable releases, please use a [versioned release](../../releases) instead.
+            
+            ---
+            
+            ### 📦 Downloads
+            
+            | File | Description |
+            |------|-------------|
+            | `VDV463Validator-latest.exe` | Standalone Windows executable |
+            | `VDV463-Validator-latest-portable.zip` | Portable ZIP (extract and run) |
+            
+            ### 📋 Requirements
+            - Windows 10 or later
+            
+            ### 🔗 Links
+            - [Full Changelog](../../commits/main)
+            - [Documentation](../../blob/main/README.md)
+          files: |
+            release-files/*
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,78 @@
+# =============================================================================
+# VDV463 Validator - Pull Request Validation Workflow
+# =============================================================================
+
+name: PR Validation
+
+on:
+  pull_request:
+    paths:
+      - 'messages/**'
+      - 'tests/fixtures/**'
+      - 'schemas/**'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  validate-changes:
+    name: Validate Changed Messages
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Get changed files
+        id: changed
+        run: |
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep '\.json$' | grep -E '(messages|fixtures)' || true)
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Validate changed messages
+        if: steps.changed.outputs.files != ''
+        run: |
+          echo "Validating changed files:"
+          echo "${{ steps.changed.outputs.files }}"
+          echo "${{ steps.changed.outputs.files }}" | tr '\n' '\0' | xargs -0 -r python src/vdv463_validator.py \
+            --quiet \
+            --junit-xml pr-validation.xml \
+            --fail-level WARNING
+
+      - name: No files to validate
+        if: steps.changed.outputs.files == ''
+        run: |
+          echo "No JSON files changed in messages/ or fixtures/"
+          echo '<?xml version="1.0"?><testsuites><testsuite name="No changes" tests="0"/></testsuites>' > pr-validation.xml
+
+      - name: Publish Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: PR Message Validation
+          path: pr-validation.xml
+          reporter: java-junit
+
+      - name: Comment on PR
+        uses: actions/github-script@v8
+        if: failure()
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ VDV463 validation found issues with the changed message files. Please check the validation report.'
+            })

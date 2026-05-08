@@ -1,0 +1,567 @@
+# =============================================================================
+# VDV463 Advanced Value Check Rules
+# =============================================================================
+#
+# Diese Regeldatei enthält erweiterte Wertebereichsprüfungen für VDV463-Nachrichten.
+# Sie ergänzt die default.yaml mit zusätzlichen plausibilitätsprüfungen.
+#
+# Kategorien:
+#   - State of Charge (SoC) Prüfungen
+#   - Leistungs- und Energiewerte
+#   - Temperaturprüfungen
+#   - Zeitliche Konsistenz
+#   - Elektrische Werte
+#   - Kilometerstand und Fahrzeugdaten
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Global Settings
+# -----------------------------------------------------------------------------
+settings:
+  strict_mode: false
+  allow_future_timestamps: true
+  max_future_hours: 168        # 7 Tage für Planungsdaten
+  timezone: "Europe/Berlin"
+  default_severity: "WARNING"
+
+# -----------------------------------------------------------------------------
+# State of Charge (SoC) Value Ranges - Erweitert
+# -----------------------------------------------------------------------------
+range_rules:
+
+  # Batterie SoC muss zwischen 0% und 100% liegen
+  stateOfCharge:
+    min: 0
+    max: 100
+    unit: "%"
+    severity: "ERROR"
+    message: "stateOfCharge muss zwischen 0% und 100% liegen"
+
+  # State of Health (SoH) - typischerweise 70-100% für einsatzfähige Batterien
+  stateOfHealth:
+    min: 0
+    max: 100
+    unit: "%"
+    severity: "ERROR"
+    message: "stateOfHealth muss zwischen 0% und 100% liegen"
+
+  # Erwarteter SoC bei Ankunft
+  expectedSocAtArrival:
+    min: 0
+    max: 100
+    unit: "%"
+    severity: "ERROR"
+    message: "expectedSocAtArrival muss zwischen 0% und 100% liegen"
+
+  # Min/Max Target SoC
+  minTargetSoc:
+    min: 0
+    max: 100
+    unit: "%"
+    severity: "ERROR"
+    message: "minTargetSoc muss zwischen 0% und 100% liegen"
+
+  maxTargetSoc:
+    min: 0
+    max: 100
+    unit: "%"
+    severity: "ERROR"
+    message: "maxTargetSoc muss zwischen 0% und 100% liegen"
+
+  # Vorhergesagte SoC-Werte
+  requestedMinSoc:
+    min: 0
+    max: 100
+    unit: "%"
+    severity: "ERROR"
+    message: "requestedMinSoc muss zwischen 0% und 100% liegen"
+
+  predictedFinalSoc:
+    min: 0
+    max: 100
+    unit: "%"
+    severity: "ERROR"
+    message: "predictedFinalSoc muss zwischen 0% und 100% liegen"
+
+  predictedDepartureTimeSoc:
+    min: 0
+    max: 100
+    unit: "%"
+    severity: "ERROR"
+    message: "predictedDepartureTimeSoc muss zwischen 0% und 100% liegen"
+
+  # -----------------------------------------------------------------------------
+  # Elektrische Werte
+  # -----------------------------------------------------------------------------
+
+  # Ladestrom (typisch DC-Schnelllader bis 500A)
+  chargingCurrent:
+    min: 0
+    max: 600
+    unit: "A"
+    severity: "ERROR"
+    message: "chargingCurrent muss zwischen 0A und 600A liegen"
+
+  # Ladespannung (typisch DC 200-1000V für E-Busse)
+  chargingVoltage:
+    min: 0
+    max: 1200
+    unit: "V"
+    severity: "ERROR"
+    message: "chargingVoltage muss zwischen 0V und 1200V liegen"
+
+  # Ladeleistung (bis 450kW für Hochleistungslader)
+  chargingPower:
+    min: 0
+    max: 500
+    unit: "kW"
+    severity: "ERROR"
+    message: "chargingPower muss zwischen 0kW und 500kW liegen"
+
+  # Aktuelle Leistung am Ladepunkt
+  presentPower:
+    min: 0
+    max: 500
+    unit: "kW"
+    severity: "ERROR"
+    message: "presentPower muss zwischen 0kW und 500kW liegen"
+
+  # Blindleistung
+  reactivePower:
+    min: -500
+    max: 500
+    unit: "kVAr"
+    severity: "WARNING"
+    message: "reactivePower sollte zwischen -500kVAr und 500kVAr liegen"
+
+  # Gesamtleistung der Ladestation
+  totalPower:
+    min: 0
+    max: 5000
+    unit: "kW"
+    severity: "ERROR"
+    message: "totalPower muss zwischen 0kW und 5000kW liegen (typisch für Depot)"
+
+  # -----------------------------------------------------------------------------
+  # Energie
+  # -----------------------------------------------------------------------------
+
+  # Gelieferte Energie pro Ladevorgang
+  deliveredEnergy:
+    min: 0
+    max: 1000
+    unit: "kWh"
+    severity: "WARNING"
+    message: "deliveredEnergy sollte zwischen 0kWh und 1000kWh liegen"
+
+  # Energiezählerstand (kumulativ, kann sehr hoch sein)
+  energyMeterReading:
+    min: 0
+    max: 10000000
+    unit: "kWh"
+    severity: "WARNING"
+    message: "energyMeterReading sollte nicht negativ sein"
+
+  # Batterie-Ladeenergie für Vorkonditionierung
+  hvBatteryChargingEnergy:
+    min: 0
+    max: 500
+    unit: "kWh"
+    severity: "WARNING"
+    message: "hvBatteryChargingEnergy sollte zwischen 0kWh und 500kWh liegen"
+
+  # Fahrzeug-Vorkonditionierungsenergie
+  vehiclePreconditioningEnergy:
+    min: 0
+    max: 100
+    unit: "kWh"
+    severity: "WARNING"
+    message: "vehiclePreconditioningEnergy sollte zwischen 0kWh und 100kWh liegen"
+
+  # -----------------------------------------------------------------------------
+  # Temperaturwerte
+  # -----------------------------------------------------------------------------
+
+  # Batterietemperatur (Betriebsbereich E-Bus Batterie)
+  temperature:
+    min: -30
+    max: 60
+    unit: "°C"
+    severity: "WARNING"
+    message: "Batterietemperatur sollte zwischen -30°C und 60°C liegen"
+
+  # Innentemperatur Ladepunkt
+  insideTemperature:
+    min: -40
+    max: 80
+    unit: "°C"
+    severity: "WARNING"
+    message: "insideTemperature sollte zwischen -40°C und 80°C liegen"
+
+  # Außentemperatur am Ladepunkt
+  outsideTemperature:
+    min: -50
+    max: 60
+    unit: "°C"
+    severity: "WARNING"
+    message: "outsideTemperature sollte zwischen -50°C und 60°C liegen"
+
+  # Steckertemperatur (kritisch für Sicherheit)
+  connectorTemperature:
+    min: -40
+    max: 90
+    unit: "°C"
+    severity: "ERROR"
+    message: "connectorTemperature muss zwischen -40°C und 90°C liegen"
+
+  # Umgebungstemperatur für Vorkonditionierung
+  ambientTemperature:
+    min: -50
+    max: 60
+    unit: "°C"
+    severity: "WARNING"
+    message: "ambientTemperature sollte zwischen -50°C und 60°C liegen"
+
+  # Batterie-Ladespannung am Fahrzeug
+  batteryChargingVoltage:
+    min: 0
+    max: 1200
+    unit: "V"
+    severity: "ERROR"
+    message: "batteryChargingVoltage muss zwischen 0V und 1200V liegen"
+
+  # -----------------------------------------------------------------------------
+  # Zeit- und Dauerwerte
+  # -----------------------------------------------------------------------------
+
+  # HV-Batterie Vorkonditionierungszeit (max 4 Stunden)
+  hvBatteryPreconditioningTime:
+    min: 0
+    max: 14400
+    unit: "Sekunden"
+    severity: "WARNING"
+    message: "hvBatteryPreconditioningTime sollte zwischen 0s und 14400s (4h) liegen"
+
+  # Fahrzeug-Vorkonditionierungszeit (max 4 Stunden)
+  vehiclePreconditioningTime:
+    min: 0
+    max: 14400
+    unit: "Sekunden"
+    severity: "WARNING"
+    message: "vehiclePreconditioningTime sollte zwischen 0s und 14400s (4h) liegen"
+
+  # Hilfsverbraucher-Leistung (HVAC)
+  hvacAuxiliaryConsumerPower:
+    min: 0
+    max: 50
+    unit: "kW"
+    severity: "WARNING"
+    message: "hvacAuxiliaryConsumerPower sollte zwischen 0kW und 50kW liegen"
+
+  # System-Hilfsverbraucher-Leistung
+  systemAuxiliaryConsumerPower:
+    min: 0
+    max: 20
+    unit: "kW"
+    severity: "WARNING"
+    message: "systemAuxiliaryConsumerPower sollte zwischen 0kW und 20kW liegen"
+
+  # -----------------------------------------------------------------------------
+  # Fahrzeugdaten
+  # -----------------------------------------------------------------------------
+
+  # Kilometerstand (max 5 Mio km für Nutzfahrzeuge)
+  mileage:
+    min: 0
+    max: 5000000
+    unit: "km"
+    severity: "WARNING"
+    message: "mileage sollte zwischen 0km und 5.000.000km liegen"
+
+  # Priorität (1 = höchste, 10 = niedrigste)
+  priority:
+    min: 1
+    max: 10000
+    unit: ""
+    severity: "ERROR"
+    message: "priority muss zwischen 1 (höchste) und 10 (niedrigste) liegen"
+
+
+# -----------------------------------------------------------------------------
+# Cross-Field Validation Rules - Erweitert
+# -----------------------------------------------------------------------------
+cross_field_rules:
+
+  # ---------------------------------------------------------------------------
+  # SoC Konsistenz
+  # ---------------------------------------------------------------------------
+
+  - id: "ADV-SOC-001"
+    name: "minTargetSoc darf maxTargetSoc nicht überschreiten"
+    description: "Der minimale Ziel-SoC muss kleiner oder gleich dem maximalen sein"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "chargingRequestData.minTargetSoc", "chargingRequestData.maxTargetSoc" ]
+      rule: "chargingRequestData.minTargetSoc <= chargingRequestData.maxTargetSoc"
+    message: "minTargetSoc ({chargingRequestData.minTargetSoc}%) überschreitet maxTargetSoc ({chargingRequestData.maxTargetSoc}%)"
+
+  - id: "ADV-SOC-002"
+    name: "expectedSocAtArrival muss kleiner als maxTargetSoc sein"
+    description: "Der erwartete SoC bei Ankunft sollte unter dem Ladeziel liegen"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "chargingRequestData.expectedSocAtArrival", "chargingRequestData.maxTargetSoc" ]
+      rule: "chargingRequestData.expectedSocAtArrival < chargingRequestData.maxTargetSoc"
+    message: "expectedSocAtArrival ({chargingRequestData.expectedSocAtArrival}%) ist bereits >= maxTargetSoc ({chargingRequestData.maxTargetSoc}%)"
+
+  - id: "ADV-SOC-003"
+    name: "minTargetSoc mindestens 10% über expectedSocAtArrival"
+    description: "Der Mindest-Ziel-SoC sollte signifikant über dem Ankunfts-SoC liegen"
+    severity: "INFO"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "chargingRequestData.expectedSocAtArrival", "chargingRequestData.minTargetSoc" ]
+      rule: "chargingRequestData.minTargetSoc >= chargingRequestData.expectedSocAtArrival + 10"
+    message: "minTargetSoc ({chargingRequestData.minTargetSoc}%) liegt weniger als 10% über expectedSocAtArrival ({chargingRequestData.expectedSocAtArrival}%)"
+
+  - id: "ADV-SOC-004"
+    name: "Kritisch niedriger Ankunfts-SoC"
+    description: "Warnung wenn der erwartete Ankunfts-SoC unter 10% liegt"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "chargingRequestData.expectedSocAtArrival" ]
+      rule: "chargingRequestData.expectedSocAtArrival >= 10"
+    message: "expectedSocAtArrival ({chargingRequestData.expectedSocAtArrival}%) ist kritisch niedrig (< 10%)"
+
+  # ---------------------------------------------------------------------------
+  # State of Health (SoH) Warnungen
+  # ---------------------------------------------------------------------------
+
+  - id: "ADV-SOH-001"
+    name: "Batterie-SoH unter 80%"
+    description: "Warnung bei degradierter Batterie"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "tractionBatteryInfo.stateOfHealth" ]
+      rule: "tractionBatteryInfo.stateOfHealth >= 80"
+    message: "stateOfHealth ({tractionBatteryInfo.stateOfHealth}%) ist unter 80% - Batterie möglicherweise degradiert"
+
+  - id: "ADV-SOH-002"
+    name: "Batterie-SoH unter 70%"
+    description: "Fehler bei stark degradierter Batterie - Austausch prüfen"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "tractionBatteryInfo.stateOfHealth" ]
+      rule: "tractionBatteryInfo.stateOfHealth >= 70"
+    message: "stateOfHealth ({tractionBatteryInfo.stateOfHealth}%) ist unter 70% - Batterieaustausch prüfen"
+
+  # ---------------------------------------------------------------------------
+  # Elektrische Konsistenz
+  # ---------------------------------------------------------------------------
+
+  - id: "ADV-ELEC-001"
+    name: "Leistung = Spannung × Strom (mit Toleranz)"
+    description: "chargingPower sollte ungefähr chargingVoltage × chargingCurrent entsprechen"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "electricData.chargingPower", "electricData.chargingVoltage", "electricData.chargingCurrent" ]
+      # P = U × I / 1000 (für kW), Toleranz 10%
+      rule: "abs(electricData.chargingPower - (electricData.chargingVoltage * electricData.chargingCurrent / 1000)) <= electricData.chargingPower * 0.1"
+    message: "chargingPower ({electricData.chargingPower}kW) weicht von berechneter Leistung (U×I) ab"
+
+  - id: "ADV-ELEC-002"
+    name: "presentPower überschreitet totalPower"
+    description: "Einzelne Ladepunkt-Leistung sollte die Stationsleistung nicht überschreiten"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "chargingPointInfo.presentPower", "chargingStationInfo.totalPower" ]
+      rule: "chargingPointInfo.presentPower <= chargingStationInfo.totalPower"
+    message: "presentPower ({chargingPointInfo.presentPower}kW) überschreitet totalPower der Station ({chargingStationInfo.totalPower}kW)"
+
+  # ---------------------------------------------------------------------------
+  # Temperatur-Sicherheitsprüfungen
+  # ---------------------------------------------------------------------------
+
+  - id: "ADV-TEMP-001"
+    name: "Hohe Steckertemperatur"
+    description: "Warnung bei erhöhter Steckertemperatur"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "chargingPointInfo.connectorTemperature" ]
+      rule: "chargingPointInfo.connectorTemperature < 70"
+    message: "connectorTemperature ({chargingPointInfo.connectorTemperature}°C) ist erhöht (≥70°C)"
+
+  - id: "ADV-TEMP-002"
+    name: "Kritische Steckertemperatur"
+    description: "Fehler bei kritischer Steckertemperatur - Sicherheitsrisiko"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "chargingPointInfo.connectorTemperature" ]
+      rule: "chargingPointInfo.connectorTemperature < 85"
+    message: "connectorTemperature ({chargingPointInfo.connectorTemperature}°C) ist kritisch hoch (≥85°C) - Sicherheitsrisiko!"
+
+  - id: "ADV-TEMP-003"
+    name: "Batterietemperatur außerhalb Optimalbereich"
+    description: "Warnung wenn Batterie nicht im optimalen Temperaturbereich (15-35°C)"
+    severity: "INFO"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "tractionBatteryInfo.temperature" ]
+      rule: "tractionBatteryInfo.temperature >= 15 and tractionBatteryInfo.temperature <= 35"
+    message: "Batterietemperatur ({tractionBatteryInfo.temperature}°C) außerhalb des Optimalbereichs (15-35°C)"
+
+  - id: "ADV-TEMP-004"
+    name: "Batterietemperatur zu niedrig zum Schnellladen"
+    description: "Warnung bei zu kalter Batterie für effizientes Laden"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "tractionBatteryInfo.temperature" ]
+      rule: "tractionBatteryInfo.temperature >= 5"
+    message: "Batterietemperatur ({tractionBatteryInfo.temperature}°C) unter 5°C - reduzierte Ladeeffizienz"
+
+  # ---------------------------------------------------------------------------
+  # Zeitliche Konsistenz
+  # ---------------------------------------------------------------------------
+
+  - id: "ADV-TIME-001"
+    name: "Ankunftszeit vor Abfahrtszeit"
+    description: "Die erwartete Ankunftszeit muss vor der geplanten Abfahrtszeit liegen"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "chargingRequestData.expectedArrivalTimeAtChargingPoint", "chargingRequestData.requestedTimeForDeparture" ]
+      rule: "chargingRequestData.expectedArrivalTimeAtChargingPoint < chargingRequestData.requestedTimeForDeparture"
+    message: "expectedArrivalTimeAtChargingPoint muss vor requestedTimeForDeparture liegen"
+
+  - id: "ADV-TIME-002"
+    name: "HVAC Vorkonditionierung vor System-Vorkonditionierung"
+    description: "HVAC-Start sollte nicht nach System-Start liegen"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "manualPreconditioning.hvacPreconditioningStartTime", "manualPreconditioning.systemPreconditioningStartTime" ]
+      rule: "manualPreconditioning.hvacPreconditioningStartTime <= manualPreconditioning.systemPreconditioningStartTime"
+    message: "hvacPreconditioningStartTime sollte nicht nach systemPreconditioningStartTime liegen"
+
+  - id: "ADV-TIME-003"
+    name: "Vorkonditionierung Start vor Ende"
+    description: "Die Startzeit muss vor der Endzeit der Vorkonditionierung liegen"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingRequestsRequest" ]
+    condition:
+      fields: [ "automaticPreconditioning.requestedStartTime", "automaticPreconditioning.requestedFinishTime" ]
+      rule: "automaticPreconditioning.requestedStartTime < automaticPreconditioning.requestedFinishTime"
+    message: "requestedStartTime muss vor requestedFinishTime liegen"
+
+  # ---------------------------------------------------------------------------
+  # Plausibilitätsprüfungen
+  # ---------------------------------------------------------------------------
+
+  - id: "ADV-PLAUS-001"
+    name: "Energie-Lieferung ohne Ladevorgang"
+    description: "deliveredEnergy sollte nur positiv sein wenn processStatus = Charging"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "chargingProcessInfo.deliveredEnergy", "chargingProcessInfo.processStatus" ]
+      rule: "chargingProcessInfo.deliveredEnergy == 0 or chargingProcessInfo.processStatus == 'Charging'"
+    message: "deliveredEnergy > 0 aber processStatus ist nicht 'Charging'"
+
+  - id: "ADV-PLAUS-002"
+    name: "Ladevorgang ohne Fahrzeug"
+    description: "Wenn processStatus = Charging muss vehicleInfo vorhanden sein"
+    severity: "ERROR"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "chargingProcessInfo.processStatus" ]
+      exists: [ "vehicleInfo" ]
+      rule: "chargingProcessInfo.processStatus != 'Charging' or vehicleInfo != null"
+    message: "processStatus ist 'Charging' aber keine vehicleInfo vorhanden"
+
+  - id: "ADV-PLAUS-003"
+    name: "Hohe Vorkonditionierungsenergie"
+    description: "Warnung bei ungewöhnlich hohem Energieverbrauch für Vorkonditionierung"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "preconditioningInfo.vehiclePreconditioningEnergy" ]
+      rule: "preconditioningInfo.vehiclePreconditioningEnergy <= 50"
+    message: "vehiclePreconditioningEnergy ({preconditioningInfo.vehiclePreconditioningEnergy}kWh) ist ungewöhnlich hoch (>50kWh)"
+
+
+# -----------------------------------------------------------------------------
+# Warning Thresholds - Schwellwerte für Warnungen
+# -----------------------------------------------------------------------------
+warning_thresholds:
+
+  # Kritisch niedriger SoC
+  critical_low_soc: 5
+
+  # Niedriger SoC Warnung
+  low_soc_warning: 15
+
+  # Hoher SoC (Batterieschonung)
+  high_soc_warning: 95
+
+  # Hohe Ladeleistung
+  high_power_warning: 300
+
+  # Sehr hohe Ladeleistung
+  very_high_power_warning: 400
+
+  # Lange Ladedauer (Stunden)
+  long_charging_duration_hours: 8
+
+  # Hoher Kilometerstand für Wartungshinweis
+  high_mileage_warning: 500000
+
+  # Kritischer Kilometerstand
+  critical_mileage_warning: 1000000
+
+
+# -----------------------------------------------------------------------------
+# Semantic Rules - Semantische Prüfungen
+# -----------------------------------------------------------------------------
+semantic_rules:
+
+  - id: "SEM-001"
+    name: "ChargingPointStatus passt zu processStatus"
+    description: "Wenn ein Ladevorgang aktiv ist, sollte der Ladepunkt nicht 'Available' sein"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "chargingPointStatus", "chargingProcessInfo.processStatus" ]
+      rule: "chargingPointStatus != 'Available' or chargingProcessInfo.processStatus not in ['Charging', 'Preparing']"
+    message: "chargingPointStatus ist 'Available' obwohl processStatus '{chargingProcessInfo.processStatus}' ist"
+
+  - id: "SEM-002"
+    name: "Fault-Status konsistent"
+    description: "Wenn chargingPointStatus = 'Faulted', sollte chargingPointFaultInfo vorhanden sein"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "chargingPointStatus" ]
+      exists: [ "chargingPointFaultInfo" ]
+      rule: "chargingPointStatus != 'Faulted' or chargingPointFaultInfo != null"
+    message: "chargingPointStatus ist 'Faulted' aber keine chargingPointFaultInfo vorhanden"
+
+  - id: "SEM-003"
+    name: "VehicleChargingStatus passt zu processStatus"
+    description: "VehicleChargingStatus und ProcessStatus sollten konsistent sein"
+    severity: "WARNING"
+    applies_to: [ "ProvideChargingInformationRequest" ]
+    condition:
+      fields: [ "vehicleInfo.vehicleChargingStatus", "chargingProcessInfo.processStatus" ]
+      rule: "(vehicleInfo.vehicleChargingStatus == 'Charging') == (chargingProcessInfo.processStatus == 'Charging')"
+    message: "vehicleChargingStatus '{vehicleInfo.vehicleChargingStatus}' und processStatus '{chargingProcessInfo.processStatus}' sind inkonsistent"

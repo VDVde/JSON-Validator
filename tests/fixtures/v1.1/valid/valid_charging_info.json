@@ -1,0 +1,72 @@
+{
+  "depotInfoList": [
+    {
+      "depotId": "urn:depot:001",
+      "name": "Main Bus Depot",
+      "chargingStationInfoList": [
+        {
+          "chargingStationId": "urn:station:001",
+          "chargingStationStatus": "Available",
+          "totalPower": 450.5,
+          "chargingPointInfoList": [
+            {
+              "chargingPointId": "urn:point:001-a",
+              "chargingPointStatus": "Occupied",
+              "insideTemperature": 22.5,
+              "outsideTemperature": 15.0,
+              "connectorTemperature": 35.2,
+              "vehicleInfo": {
+                "vehicleId": "BUS-55001",
+                "vehicleStatusInfo": {
+                  "conservationChargingActive": false,
+                  "systemPreconditioningActive": true,
+                  "hvacPreconditioningActive": false,
+                  "balancingActive": false,
+                  "batteryChargingVoltage": 750.5
+                },
+                "vehicleChargingStatus": "Charging",
+                "tractionBatteryInfo": {
+                  "stateOfCharge": 65.5,
+                  "stateOfHealth": 98.2,
+                  "temperature": 28
+                },
+                "preconditioningInfo": {
+                  "hvBatteryPreconditioningTime": 1800,
+                  "hvBatteryChargingEnergy": 15000,
+                  "vehiclePreconditioningTime": 900,
+                  "vehiclePreconditioningEnergy": 5000
+                }
+              },
+              "chargingProcessInfo": {
+                "chargingProcessId": "urn:process:001",
+                "processStatus": "Charging",
+                "startTime": "2024-01-15T08:30:00Z",
+                "chargingPredictionData": {
+                  "chargingPredictionDataMinSoc": {
+                    "requestedMinSoc": 80,
+                    "predictedTime": "2024-01-15T10:00:00Z"
+                  },
+                  "chargingPredictionDataFinalSoc": {
+                    "predictedFinalSoc": 95,
+                    "predictedTime": "2024-01-15T11:30:00Z"
+                  }
+                },
+                "electricData": {
+                  "chargingCurrent": 200.0,
+                  "chargingVoltage": 750.0,
+                  "chargingPower": 150.0,
+                  "reactivePower": 5.2
+                },
+                "deliveredEnergy": 45.5
+              }
+            },
+            {
+              "chargingPointId": "urn:point:001-b",
+              "chargingPointStatus": "Available"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

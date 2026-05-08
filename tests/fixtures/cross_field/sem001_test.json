@@ -1,0 +1,24 @@
+{
+  "depotInfoList": [
+    {
+      "depotId": "DEPOT-001",
+      "name": "Test Depot",
+      "chargingStationInfoList": [
+        {
+          "chargingStationId": "CS-001",
+          "chargingStationStatus": "Available",
+          "chargingPointInfoList": [
+            {
+              "chargingPointId": "CP-001",
+              "chargingPointStatus": "Available",
+              "chargingProcessInfo": {
+                "chargingProcessId": "P-001",
+                "processStatus": "Charging"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "_description": "VDV463 v2.0 - ProvideChargingStatusRequest",
+  "schemaVersion": "2.0",
+  "timestamp": "2025-01-15T10:30:00Z",
+  "senderId": "CMS_001",
+  "receiverId": "DEPOT_001",
+  "chargingStatusList": [
+    {
+      "chargingPointId": "CP-001",
+      "vehicleId": "BUS-042",
+      "status": "Charging",
+      "currentPower": 145,
+      "currentSoC": 65,
+      "targetSoC": 90,
+      "estimatedCompletionTime": "2025-01-15T23:30:00Z",
+      "energyDelivered": 87.5,
+      "chargingDuration": 3600
+    },
+    {
+      "chargingPointId": "CP-002",
+      "vehicleId": "BUS-087",
+      "status": "Waiting",
+      "currentPower": 0,
+      "currentSoC": 22,
+      "targetSoC": 95,
+      "queuePosition": 1
+    }
+  ]
+}

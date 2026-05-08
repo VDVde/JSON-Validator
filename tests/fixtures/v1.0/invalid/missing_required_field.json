@@ -1,0 +1,23 @@
+{
+  "_description": "Invalid: Missing required field 'vehicleId'",
+  "timestamp": "2025-01-15T17:30:00Z",
+  "senderId": "DEPOT_001",
+  "receiverId": "CMS_001",
+  "chargingRequestList": [
+    {
+      "requestId": "REQ-001",
+      "_missing": "vehicleId",
+      "vehicleType": "eCitaro",
+      "batteryCapacity": 292,
+      "currentSoC": 25,
+      "targetSoC": 90,
+      "requestedEnergy": 190,
+      "requestedPower": 150,
+      "priority": 3,
+      "plannedArrival": "2025-01-15T18:00:00Z",
+      "plannedDeparture": "2025-01-16T05:00:00Z",
+      "chargingPointId": "CP-001",
+      "connectorType": "CCS2"
+    }
+  ]
+}

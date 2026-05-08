@@ -1,0 +1,33 @@
+{
+  "chargingRequestList": [
+    {
+      "vehicleId": "BUS-55001",
+      "chargingRequestId": "REQ-001",
+      "chargingPointId": "CP-001-A",
+      "priority": 1,
+      "chargingInstruction": "Normal",
+      "chargingRequestData": {
+        "expectedArrivalTimeAtChargingPoint": "2024-01-15T18:00:00Z",
+        "expectedSocAtArrival": 25.5,
+        "minTargetSoc": 90,
+        "maxTargetSoc": 70,
+        "requestedTimeForDeparture": "2024-01-16T05:30:00Z",
+        "adHocCharging": false
+      },
+      "automaticPreconditioning": {
+        "preconditioningRequest": "HotWaterAndHeating",
+        "ambientTemperature": -5.0,
+        "requestedStartTime": "2024-01-16T04:30:00Z",
+        "requestedFinishTime": "2024-01-16T05:15:00Z"
+      }
+    },
+    {
+      "vehicleId": "BUS-55002",
+      "chargingRequestId": "REQ-002",
+      "chargingRequestData": {
+        "minTargetSoc": 60,
+        "maxTargetSoc": 95
+      }
+    }
+  ]
+}

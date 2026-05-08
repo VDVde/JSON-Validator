@@ -1,0 +1,125 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vdv463-validator"
+version = "3.0.2"
+description = "Tool for validating VDV463 electric bus charging infrastructure messages"
+readme = "README.md"
+license = { text = "APACHE-2" }
+requires-python = ">=3.10"
+authors = [
+    { name = "VDV463 Validator Contributors" }
+]
+# Contact & bug reports: https://github.com/martinfrenzel/vdv463-validator/issues
+keywords = ["vdv463", "validation", "json-schema", "e-mobility", "charging", "electric-bus"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing"
+]
+dependencies = [
+    "jsonschema>=4.17.0",
+    "pyyaml>=6.0",
+    "PySide6>=6.4.0",
+    "darkdetect>=0.8.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+    "ruff>=0.6.0", # ersetzt flake8 + isort
+]
+
+[project.scripts]
+vdv463-validate = "src.vdv463_validator:main"
+
+[project.urls]
+Homepage = "https://github.com/VDVde/JSON-Validator"
+Documentation = "https://github.com/VDVde/JSON-Validator#readme"
+Repository = "https://github.com/VDVde/JSON-Validator.git"
+Issues = "https://github.com/VDVde/JSON-Validator/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+# ---------------------------------------------------------------------------
+# Formatting & Linting
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Mypy
+# ---------------------------------------------------------------------------
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "I", # isort
+    "N", # pep8-naming
+    "UP", # pyupgrade
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+]
+ignore = [
+    "E501", # line too long (handled by formatter)
+    "N802", # Qt override methods use camelCase (sizeHint, paintEvent, etc.)
+    "N815", # PyQt signals use camelCase (pathSelected, valueChanged)
+    "N999", # module name 'UI' follows project convention
+    "B008", # FastAPI Depends() calls in argument defaults are standard
+    "N805", # Pydantic v2 field_validator uses 'cls'
+    "E712", # SQLAlchemy requires literal comparison to True/False
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+# ---------------------------------------------------------------------------
+# Pytest & Coverage
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
+markers = [
+    "qt: tests that require PySide6 (run with QT_QPA_PLATFORM=offscreen in headless environments)"
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError"
+]

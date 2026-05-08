@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --font-display: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --accent: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.5);
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: #020617;
+    color: #f8fafc;
+    @apply antialiased selection:bg-indigo-500/30 selection:text-indigo-200 overflow-hidden h-screen;
+}
+
+/* --- Ambient Background --- */
+.aurora-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    background: 
+        radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 1) 0%, rgba(2, 6, 23, 1) 100%);
+    pointer-events: none;
+}
+
+/* --- Flexible Workspace Layout --- */
+.workspace-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr 380px;
+    gap: 1rem;
+    height: calc(100vh - 64px);
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 1400px) {
+    .workspace-grid {
+        grid-template-columns: 280px 1fr 340px;
+    }
+}
+
+@media (max-width: 1100px) {
+    .workspace-grid {
+        grid-template-columns: 240px 1fr 300px;
+    }
+}
+
+.panel-card {
+    @apply bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300;
+    min-width: 0; /* Prevents flex/grid children from overflowing */
+}
+
+.panel-card:hover {
+    @apply border-white/20;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.4);
+}
+
+/* --- Fix for Listbox / Select Readability --- */
+select {
+    background-color: #0f172a !important; /* Slate 900 */
+    color: #f1f5f9 !important; /* Slate 100 */
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+option {
+    background-color: #1e293b !important; /* Slate 800 for better contrast in dropdowns */
+    color: #f8fafc !important;
+    padding: 12px !important;
+}
+
+select:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2) !important;
+}
+
+input, select, textarea {
+    @apply focus:ring-2 focus:ring-indigo-500/40 focus:outline-none transition-all;
+}
+
+/* --- Components --- */
+.btn-premium {
+    @apply flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+/* --- Scrollbar & Animations --- */
+::-webkit-scrollbar { 
+    width: 10px; 
+    height: 10px; 
+}
+::-webkit-scrollbar-track { 
+    background: rgba(255, 255, 255, 0.02); 
+    border-radius: 5px;
+}
+::-webkit-scrollbar-thumb { 
+    background: rgba(255, 255, 255, 0.15); 
+    border-radius: 10px; 
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { 
+    background: rgba(255, 255, 255, 0.3); 
+    background-clip: padding-box;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up { animation: slideUp 0.4s ease-out forwards; }

@@ -1,0 +1,41 @@
+{
+  "depotInfoList": [
+    {
+      "depotId": "DEPOT-001",
+      "chargingStationInfoList": [
+        {
+          "chargingStationId": "CS-001",
+          "chargingStationStatus": "Available",
+          "chargingPointInfoList": [
+            {
+              "chargingPointId": "CP-001",
+              "chargingPointStatus": "Occupied",
+              "vehicleInfo": {
+                "vehicleId": "BUS-001",
+                "vehicleStatusInfo": {
+                  "conservationChargingActive": false
+                },
+                "vehicleChargingStatus": "Charging",
+                "tractionBatteryInfo": {
+                  "stateOfCharge": 50.0,
+                  "stateOfHealth": 95,
+                  "temperature": 25
+                },
+                "preconditioningInfo": {}
+              },
+              "chargingProcessInfo": {
+                "chargingProcessId": "PROC-001",
+                "processStatus": "Charging",
+                "startTime": "invalid-datetime",
+                "chargingPredictionData": {},
+                "electricData": {
+                  "chargingPower": 50.0
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

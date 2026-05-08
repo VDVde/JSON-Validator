@@ -1,0 +1,80 @@
+# =============================================================================
+# VDV463 Test Rules - Strict Mode
+# =============================================================================
+# Stricter validation rules for testing purposes
+
+settings:
+  strict_mode: true
+  default_severity: ERROR
+
+range_rules:
+  maxPower:
+    min: 0
+    max: 500  # Lower limit for strict mode
+    unit: kW
+    message: "maxPower must be between 0 and 500 kW (strict mode)"
+
+  minPower:
+    min: 0
+    max: 300
+    unit: kW
+
+  currentSoC:
+    min: 0
+    max: 100
+    unit: "%"
+
+  targetSoC:
+    min: 0
+    max: 100
+    unit: "%"
+
+  requestedEnergy:
+    min: 0
+    max: 500
+    unit: kWh
+
+  batteryCapacity:
+    min: 50
+    max: 800
+    unit: kWh
+
+  priority:
+    min: 1
+    max: 5  # Stricter priority range
+
+cross_field_rules:
+  - id: "STRICT-PWR-001"
+    name: "minPower must not exceed maxPower"
+    severity: ERROR
+    applies_to:
+      - ProvideChargingInformationRequest
+      - ProvideChargingRequestsRequest
+    condition:
+      fields: [ minPower, maxPower ]
+      rule: "minPower <= maxPower"
+    message: "minPower ({minPower} kW) exceeds maxPower ({maxPower} kW)"
+
+  - id: "STRICT-SOC-001"
+    name: "targetSoC must exceed currentSoC"
+    severity: ERROR  # Strict: ERROR instead of WARNING
+    applies_to:
+      - ProvideChargingRequestsRequest
+    condition:
+      fields: [ targetSoC, currentSoC ]
+      rule: "targetSoC > currentSoC"
+    message: "targetSoC ({targetSoC}%) must be greater than currentSoC ({currentSoC}%)"
+
+  - id: "STRICT-SOC-002"
+    name: "Minimum SoC buffer required"
+    severity: ERROR
+    applies_to:
+      - ProvideChargingRequestsRequest
+    condition:
+      fields: [ targetSoC, currentSoC ]
+      rule: "targetSoC >= currentSoC + 10"  # At least 10% difference
+    message: "targetSoC must be at least 10% higher than currentSoC"
+
+warning_thresholds:
+  low_soc_warning: 25  # Higher threshold in strict mode
+  high_power_warning: 300

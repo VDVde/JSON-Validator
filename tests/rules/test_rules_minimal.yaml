@@ -1,0 +1,30 @@
+# =============================================================================
+# VDV463 Test Rules - Minimal
+# =============================================================================
+# Minimal validation rules for basic testing
+
+settings:
+  strict_mode: false
+  default_severity: WARNING
+
+range_rules:
+  maxPower:
+    min: 0
+    max: 2000
+    unit: kW
+
+  currentSoC:
+    min: 0
+    max: 100
+    unit: "%"
+
+  targetSoC:
+    min: 0
+    max: 100
+    unit: "%"
+
+# No cross-field rules in minimal mode
+cross_field_rules: [ ]
+
+# No warning thresholds in minimal mode
+warning_thresholds: { }

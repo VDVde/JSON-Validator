@@ -1,0 +1,63 @@
+# =============================================================================
+# VDV463 Validator - GitHub Actions Release Workflow
+# =============================================================================
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build package
+        run: python -m build
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: VDV463 Validator v${{ steps.version.outputs.version }}
+          body: |
+            ## VDV463 Validator v${{ steps.version.outputs.version }}
+            
+            ### Installation
+            ```bash
+            pip install vdv463-validator
+            ```
+            
+            ### Changes
+            See [CHANGELOG.md](CHANGELOG.md) for details.
+          files: |
+            dist/*
+          draft: false
+          prerelease: ${{ contains(github.ref, '-') }}
+
+      - name: Publish to PyPI
+        if: "!contains(github.ref, '-')"
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true

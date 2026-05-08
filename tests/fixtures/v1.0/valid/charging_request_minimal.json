@@ -1,0 +1,12 @@
+{
+  "chargingRequestList": [
+    {
+      "vehicleId": "BUS-001",
+      "chargingRequestId": "urn:request:001",
+      "chargingRequestData": {
+        "minTargetSoc": 80.0,
+        "maxTargetSoc": 90.0
+      }
+    }
+  ]
+}

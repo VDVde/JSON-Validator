@@ -1,0 +1,213 @@
+// =============================================================================
+// VDV463 Validator - Jenkins Pipeline
+// =============================================================================
+
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'PYTHON_VERSION',
+            choices: ['3.11', '3.10', '3.12'],
+            description: 'Python version to use'
+        )
+        choice(
+            name: 'FAIL_LEVEL',
+            choices: ['ERROR', 'WARNING', 'INFO'],
+            description: 'Minimum severity level that causes build failure'
+        )
+        choice(
+            name: 'SCHEMA_VERSION',
+            choices: ['auto', '1.0', '1.1', '2.0'],
+            description: 'VDV463 schema version'
+        )
+        string(
+            name: 'MESSAGE_DIR',
+            defaultValue: 'tests/fixtures/*/valid',
+            description: 'Directory containing messages to validate (supports glob patterns)'
+        )
+    }
+
+    environment {
+        VDV463_FAIL_LEVEL = "${params.FAIL_LEVEL}"
+        VDV463_SCHEMA_VERSION = "${params.SCHEMA_VERSION}"
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 30, unit: 'MINUTES')
+        timestamps()
+        ansiColor('xterm')
+    }
+
+    stages {
+        // ---------------------------------------------------------------------
+        // Setup Stage
+        // ---------------------------------------------------------------------
+        stage('Setup') {
+            steps {
+                script {
+                    echo "Python Version: ${params.PYTHON_VERSION}"
+                    echo "Fail Level: ${params.FAIL_LEVEL}"
+                    echo "Schema Version: ${params.SCHEMA_VERSION}"
+                }
+                sh '''
+                    python${PYTHON_VERSION} -m venv venv || python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements-dev.txt
+                '''
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // Lint Stage
+        // ---------------------------------------------------------------------
+        stage('Lint') {
+            steps {
+                sh '''
+                    . venv/bin/activate
+                    echo "Running flake8..."
+                    flake8 src/ tests/ --max-line-length=100 --statistics || true
+                    echo "Running mypy..."
+                    mypy src/ --ignore-missing-imports || true
+                '''
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // Test Stage
+        // ---------------------------------------------------------------------
+        stage('Test') {
+            steps {
+                sh '''
+                    . venv/bin/activate
+                    pytest tests/ -v \
+                        --cov=src \
+                        --cov-report=xml:coverage.xml \
+                        --cov-report=html:htmlcov \
+                        --junitxml=pytest-results.xml
+                '''
+            }
+            post {
+                always {
+                    junit 'pytest-results.xml'
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'htmlcov',
+                        reportFiles: 'index.html',
+                        reportName: 'Coverage Report'
+                    ])
+                    recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']])
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // Validate Stage
+        // ---------------------------------------------------------------------
+        stage('Validate Messages') {
+            steps {
+                script {
+                    def messageFiles = sh(
+                        script: "ls ${params.MESSAGE_DIR}/*.json 2>/dev/null || echo ''",
+                        returnStdout: true
+                    ).trim()
+
+                    if (messageFiles) {
+                        sh """
+                            . venv/bin/activate
+                            python src/vdv463_validator.py ${params.MESSAGE_DIR}/*.json \
+                                --quiet \
+                                --junit-xml vdv463-validation.xml \
+                                --fail-level ${params.FAIL_LEVEL} \
+                                --schema-version ${params.SCHEMA_VERSION}
+                        """
+                    } else {
+                        echo "No message files found in ${params.MESSAGE_DIR}"
+                        sh "echo '<?xml version=\"1.0\"?><testsuites/>' > vdv463-validation.xml"
+                    }
+                }
+            }
+            post {
+                always {
+                    junit 'vdv463-validation.xml'
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // Strict Validation Stage (informational)
+        // ---------------------------------------------------------------------
+        stage('Strict Validation') {
+            when {
+                expression { params.FAIL_LEVEL == 'ERROR' }
+            }
+            steps {
+                script {
+                    def messageFiles = sh(
+                        script: "ls ${params.MESSAGE_DIR}/*.json 2>/dev/null || echo ''",
+                        returnStdout: true
+                    ).trim()
+
+                    if (messageFiles) {
+                        sh """
+                            . venv/bin/activate
+                            python src/vdv463_validator.py ${params.MESSAGE_DIR}/*.json \
+                                --quiet \
+                                --junit-xml vdv463-strict.xml \
+                                --fail-level WARNING \
+                                --schema-version ${params.SCHEMA_VERSION} || true
+                        """
+                    } else {
+                        sh "echo '<?xml version=\"1.0\"?><testsuites/>' > vdv463-strict.xml"
+                    }
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'vdv463-strict.xml'
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Post Actions
+    // -------------------------------------------------------------------------
+    post {
+        always {
+            archiveArtifacts artifacts: '**/vdv463-*.xml, **/pytest-*.xml, **/*_validation_*.json',
+                             allowEmptyArchive: true
+
+            cleanWs(cleanWhenNotBuilt: false,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true,
+                    notFailBuild: true,
+                    patterns: [[pattern: 'venv/**', type: 'EXCLUDE']])
+        }
+
+        success {
+            echo 'Build succeeded!'
+        }
+
+        failure {
+            echo 'Build failed!'
+            // Uncomment to enable email notifications:
+            // emailext(
+            //     subject: "FAILED: VDV463 Validator - ${currentBuild.fullDisplayName}",
+            //     body: """
+            //         <p>Build failed: ${env.BUILD_URL}</p>
+            //         <p>Check the console output for details.</p>
+            //     """,
+            //     recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+            // )
+        }
+
+        unstable {
+            echo 'Build unstable - check test results'
+        }
+    }
+}

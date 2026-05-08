@@ -1,0 +1,171 @@
+# =============================================================================
+# VDV463 Validator - GitLab CI/CD Configuration
+# =============================================================================
+
+stages:
+  - lint
+  - test
+  - validate
+  - release
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHON_VERSION: "3.11"
+
+# Cache pip downloads between jobs
+cache:
+  paths:
+    - .cache/pip/
+    - venv/
+
+# -----------------------------------------------------------------------------
+# Templates
+# -----------------------------------------------------------------------------
+
+.python_setup: &python_setup
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install --upgrade pip
+    - pip install -r requirements-dev.txt
+
+# -----------------------------------------------------------------------------
+# Lint Stage
+# -----------------------------------------------------------------------------
+
+flake8:
+  <<: *python_setup
+  stage: lint
+  script:
+    - flake8 src/ tests/ --max-line-length=100 --statistics
+  allow_failure: true
+
+mypy:
+  <<: *python_setup
+  stage: lint
+  script:
+    - mypy src/ --ignore-missing-imports
+  allow_failure: true
+
+# -----------------------------------------------------------------------------
+# Test Stage
+# -----------------------------------------------------------------------------
+
+pytest:
+  <<: *python_setup
+  stage: test
+  script:
+    - pytest tests/ -v --cov=src --cov-report=xml --cov-report=html --junitxml=pytest-report.xml
+  coverage: '/TOTAL.*\s+(\d+%)/'
+  artifacts:
+    when: always
+    paths:
+      - htmlcov/
+      - pytest-report.xml
+      - coverage.xml
+    reports:
+      junit: pytest-report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+pytest-py310:
+  <<: *python_setup
+  stage: test
+  image: python:3.10-slim
+  script:
+    - pytest tests/ -v
+  allow_failure: true
+
+pytest-py312:
+  <<: *python_setup
+  stage: test
+  image: python:3.12-slim
+  script:
+    - pytest tests/ -v
+  allow_failure: true
+
+# -----------------------------------------------------------------------------
+# Validate Stage
+# -----------------------------------------------------------------------------
+
+validate-fixtures:
+  <<: *python_setup
+  stage: validate
+  script:
+    - |
+      if [ -d "tests/fixtures" ]; then
+        python src/vdv463_validator.py tests/fixtures/*/valid/*.json \
+          --quiet \
+          --junit-xml validation-report.xml \
+          --fail-level ERROR
+      else
+        echo "No fixtures found, skipping validation"
+      fi
+  artifacts:
+    when: always
+    reports:
+      junit: validation-report.xml
+  allow_failure: true
+
+validate-strict:
+  <<: *python_setup
+  stage: validate
+  script:
+    - |
+      if [ -d "tests/fixtures" ]; then
+        python src/vdv463_validator.py tests/fixtures/*/valid/*.json \
+          --quiet \
+          --junit-xml validation-strict.xml \
+          --fail-level WARNING
+      else
+        echo "No fixtures found, skipping validation"
+      fi
+  artifacts:
+    when: always
+    reports:
+      junit: validation-strict.xml
+  allow_failure: true  # Strict mode is informational
+
+# -----------------------------------------------------------------------------
+# Release Stage (only on tags)
+# -----------------------------------------------------------------------------
+
+release:
+  stage: release
+  image: python:${PYTHON_VERSION}-slim
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  before_script:
+    - pip install build twine
+  script:
+    - python -m build
+    - ls -la dist/
+  artifacts:
+    paths:
+      - dist/
+
+# -----------------------------------------------------------------------------
+# Manual Jobs
+# -----------------------------------------------------------------------------
+
+validate-custom:
+  <<: *python_setup
+  stage: validate
+  when: manual
+  variables:
+    MESSAGE_DIR: "messages"
+    FAIL_LEVEL: "ERROR"
+    SCHEMA_VERSION: "auto"
+  script:
+    - |
+      python src/vdv463_validator.py ${MESSAGE_DIR}/*.json \
+        --quiet \
+        --junit-xml custom-validation.xml \
+        --fail-level ${FAIL_LEVEL} \
+        --schema-version ${SCHEMA_VERSION}
+  artifacts:
+    when: always
+    reports:
+      junit: custom-validation.xml
