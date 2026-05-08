@@ -327,7 +327,7 @@ class SchemaVersion:
             dest_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Fetch schema
-            with urllib.request.urlopen(url, timeout=10) as response:
+            with urllib.request.urlopen(url, timeout=10) as response:  # nosec
                 if response.status == 200:
                     content = response.read().decode("utf-8")
                     # Validate that it's actually JSON

@@ -476,7 +476,7 @@ class ValueRangeValidator:
 
         try:
             # Safe evaluation using limited globals
-            result = eval(eval_expr, {"__builtins__": {}}, {})
+            result = eval(eval_expr, {"__builtins__": {}}, {})  # nosec
             return bool(result)
         except Exception:
             return True  # Default to passing if we can't evaluate

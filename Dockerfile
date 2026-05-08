@@ -16,6 +16,7 @@ RUN addgroup -g 1000 validator \
 WORKDIR /home/validator/app
 
 # Copy python dependencies first (better layer caching)
+COPY --chown=validator:validator pyproject.toml README.md ./
 COPY --chown=validator:validator requirements-docker.txt requirements.txt
 COPY --chown=validator:validator web/backend/requirements.txt ./web/backend/
 
@@ -24,8 +25,7 @@ USER validator
 
 # Install dependencies (user level, no cache)
 ENV PATH="/home/validator/.local/bin:$PATH"
-RUN pip install --no-cache-dir --user -r requirements.txt \
-    && pip install --no-cache-dir --user -r web/backend/requirements.txt
+RUN pip install --no-cache-dir --user .[docker,web]
 
 # Copy source code with restricted permissions
 COPY --chown=validator:validator src ./src
