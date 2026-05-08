@@ -247,7 +247,7 @@ export default function LegalPages({ page, onClose }) {
                     sind willkommen!
                 </p>
                 <a
-                    href="https://github.com/martinfrenzel/vdv463-validator"
+                    href="https://github.com/VDVde/JSON-Validator"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors text-sm"
@@ -337,7 +337,7 @@ export default function LegalPages({ page, onClose }) {
                     improvement suggestions are welcome!
                 </p>
                 <a
-                    href="https://github.com/martinfrenzel/vdv463-validator"
+                    href="https://github.com/VDVde/JSON-Validator"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors text-sm"

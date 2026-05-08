@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
     { name = "VDV463 Validator Contributors" }
 ]
-# Contact & bug reports: https://github.com/martinfrenzel/vdv463-validator/issues
+# Contact & bug reports: https://github.com/VDVde/JSON-Validator/issues
 keywords = ["vdv463", "validation", "json-schema", "e-mobility", "charging", "electric-bus"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

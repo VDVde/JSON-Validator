@@ -20,7 +20,7 @@
 
 #define MyAppName "VDV463 Validator"
 #define MyAppPublisher "VDV463 Project"
-#define MyAppURL "https://github.com/martinfrenzel/vdv463-validator"
+#define MyAppURL "https://github.com/VDVde/JSON-Validator"
 #define MyAppExeName "VDV463Validator.exe"
 
 [Setup]
