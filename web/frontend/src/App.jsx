@@ -499,7 +499,7 @@ export default function App() {
                                             <span className="text-sm font-medium truncate">{file.name}</span>
                                         </div>
                                         {results[file.name] && (
-                                            results[file.name].is_valid ?
+                                            results[file.name].valid ?
                                                 <CheckCircle2 size={14} className="text-emerald-500 shrink-0" /> :
                                                 <AlertCircle size={14} className="text-rose-500 shrink-0" />
                                         )}
@@ -604,14 +604,14 @@ export default function App() {
                                 </div>
                             ) : (
                                 <div className="p-4 space-y-4 animate-slide-up">
-                                    <div className={`p-4 rounded-2xl border ${activeResults.is_valid ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
+                                    <div className={`p-4 rounded-2xl border ${activeResults.valid ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
                                         <div className="flex items-center gap-4">
-                                            <div className={`p-3 rounded-xl ${activeResults.is_valid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                                                {activeResults.is_valid ? <CheckCircle2 size={24} /> : <AlertCircle size={24} />}
+                                            <div className={`p-3 rounded-xl ${activeResults.valid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                                                {activeResults.valid ? <CheckCircle2 size={24} /> : <AlertCircle size={24} />}
                                             </div>
                                             <div>
-                                                <h4 className={`font-black text-sm uppercase tracking-tight ${activeResults.is_valid ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                    {activeResults.is_valid ? 'Validation Passed' : 'Validation Failed'}
+                                                <h4 className={`font-black text-sm uppercase tracking-tight ${activeResults.valid ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {activeResults.valid ? 'Validation Passed' : 'Validation Failed'}
                                                 </h4>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <span className="glass-tag">v{activeResults.schema_version || 'auto'}</span>
