@@ -54,6 +54,8 @@ const translations = {
         'results.warnings': 'Warnings',
         'results.success_msg': 'Validation Successful',
         'results.success_desc': 'The file complies with the selected VDV463 schema.',
+        'results.passed': 'Validation Passed',
+        'results.failed': 'Validation Failed',
         'results.empty_state': 'Run validation to see results here.',
 
         // Auth - Basic
@@ -182,6 +184,8 @@ const translations = {
         'results.warnings': 'Warnungen',
         'results.success_msg': 'Validierung erfolgreich',
         'results.success_desc': 'Die Datei entspricht dem gewählten VDV463-Schema.',
+        'results.passed': 'Validierung bestanden',
+        'results.failed': 'Validierung fehlgeschlagen',
         'results.empty_state': 'Starten Sie die Validierung für Ergebnisse.',
 
         // Auth - Basic

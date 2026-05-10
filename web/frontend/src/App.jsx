@@ -611,7 +611,7 @@ export default function App() {
                                             </div>
                                             <div>
                                                 <h4 className={`font-black text-sm uppercase tracking-tight ${activeResults.valid ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                    {activeResults.valid ? 'Validation Passed' : 'Validation Failed'}
+                                                    {activeResults.valid ? t('results.passed') : t('results.failed')}
                                                 </h4>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <span className="glass-tag">v{activeResults.schema_version || 'auto'}</span>
