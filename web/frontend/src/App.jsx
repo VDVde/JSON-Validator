@@ -81,7 +81,7 @@ export default function App() {
     const [activeTab, setActiveTab] = useState('editor'); // 'editor' or 'tree'
     const [activeErrorLine, setActiveErrorLine] = useState(null);
     const [activeErrorPath, setActiveErrorPath] = useState(null);
-    const [activeIssueIndex, setActiveIssueIndex] = useState(null);
+    const [activeIssueId, setActiveIssueId] = useState(null);
     const [validationConfig, setValidationConfig] = useState({ schemaVersion: 'auto', schemaOnly: false });
     const [customRules, setCustomRules] = useState(null);
     const [autoValidateTrigger, setAutoValidateTrigger] = useState(0);
@@ -241,7 +241,7 @@ export default function App() {
         setIsValidating(true);
         setActiveErrorLine(null);
         setActiveErrorPath(null);
-        setActiveIssueIndex(null);
+        setActiveIssueId(null);
 
         const authHeader = authType === 'jwt' ? `Bearer ${auth}` : `Basic ${auth}`;
         const newResults = {};
@@ -270,8 +270,9 @@ export default function App() {
                     // Translate error messages for the current UI language
                     const result = response.data;
                     if (result?.issues) {
-                        result.issues = result.issues.map(issue => ({
+                        result.issues = result.issues.map((issue, idx) => ({
                             ...issue,
+                            id: `issue-${file.name}-${idx}`,
                             message: translateValidationMessage(issue.message, lang)
                         }));
                     }
@@ -356,9 +357,9 @@ export default function App() {
         return null;
     };
 
-    const handleIssueClick = (issue, index) => {
+    const handleIssueClick = (issue) => {
         setActiveErrorPath(issue.path);
-        setActiveIssueIndex(index);
+        setActiveIssueId(issue.id);
         
         // Use backend provided line number if available, else try to find it
         const line = issue.line_number || findLineFromPath(issue.path);
@@ -638,12 +639,12 @@ export default function App() {
                                                 />
                                             </div>
 
-                                            {filteredIssues.map((issue, i) => (
+                                            {filteredIssues.map((issue) => (
                                                 <button
-                                                    key={i}
-                                                    onClick={() => handleIssueClick(issue, i)}
+                                                    key={issue.id}
+                                                    onClick={() => handleIssueClick(issue)}
                                                     className={`w-full text-left p-4 rounded-2xl transition-all group relative overflow-hidden ${
-                                                        activeIssueIndex === i 
+                                                        activeIssueId === issue.id 
                                                         ? 'bg-indigo-500/10 border-indigo-500/40 ring-1 ring-indigo-500/30 shadow-lg shadow-indigo-500/10' 
                                                         : 'bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/[0.08]'
                                                     }`}
