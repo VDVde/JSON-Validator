@@ -8,9 +8,10 @@
 
 CLI tool and GUI for validating VDV463 electric bus charging infrastructure messages (ProvideChargingInformationRequest,
 ProvideChargingRequestsRequest) against JSON Schema with cross-field validation. Supports multi-version schemas, CI/CD
-pipelines with JUnit XML output. Unofficial community project – not provided or endorsed by the VDV 463 working group.
+pipelines with JUnit XML output. 
 
-> ⚠️ **Disclaimer**: This is an unofficial, community-developed tool. In particular, it is not provided, endorsed, approved, recommended or maintained by VDV working groups or VDV (Verband Deutscher Verkehrsunternehmen) in any way. The official VDV 463 specification should be obtained directly from VDV. Use this software at your own risk.
+> ⚠️ **Disclaimer**: This is an unofficial, community-developed tool. In particular, it is not provided, endorsed, approved, recommended or maintained by VDV working groups 
+or VDV (Verband Deutscher Verkehrsunternehmen) in any way. The official VDV 463 specification should be obtained directly from VDV. Use this software at your own risk.
 
 ![logo](media/logo.png)
 ---
@@ -490,13 +491,3 @@ This project is licensed under the Apache 2.0 License – see the [LICENSE](LICE
 
 - VDV (Verband Deutscher Verkehrsunternehmen) for the VDV463 specification
 - The open-source community for jsonschema and related tools
-
----
-
-## Disclaimer
-
-This software is provided "as is", without warranty of any kind. This is an unofficial community project and is **not
-affiliated with, endorsed by, or associated with the VDV 463 working group** or VDV (Verband Deutscher
-Verkehrsunternehmen).
-
-For the official VDV463 specification, please contact VDV directly.
