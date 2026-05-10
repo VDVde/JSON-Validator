@@ -6,6 +6,7 @@ This script downloads the latest schemas from the VDVde/VDV463 repository
 and saves them to the local schemas/ directory.
 """
 
+import json
 import urllib.request
 from pathlib import Path
 
@@ -53,8 +54,17 @@ SCHEMAS_DIR = BASE_DIR / "schemas"
 def download_file(url, dest_path):
     print(f"Downloading {url} -> {dest_path}")
     try:
-        with urllib.request.urlopen(url) as response:
+        # Add timeout to prevent hanging
+        with urllib.request.urlopen(url, timeout=10) as response:
             content = response.read().decode('utf-8')
+            
+            # CRITICAL: Validate JSON before saving to prevent corrupted schemas
+            try:
+                json.loads(content)
+            except json.JSONDecodeError:
+                print(f"  Error: Downloaded content is not valid JSON (might be an HTML error page).")
+                return False
+
             with open(dest_path, 'w', encoding='utf-8') as f:
                 f.write(content)
         return True
