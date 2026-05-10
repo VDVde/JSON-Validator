@@ -471,7 +471,7 @@ export default function App() {
             </header>
 
             {/* Workspace Grid */}
-            <main className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-64px)] p-4 gap-4 overflow-y-auto lg:overflow-hidden">
+            <main className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-64px-32px)] p-4 gap-4 overflow-y-auto lg:overflow-hidden">
                 {/* Explorer & Config Panel */}
                 <aside className="w-full lg:w-80 flex flex-col gap-4 shrink-0 min-h-0">
                     <section className="panel-card flex-1">

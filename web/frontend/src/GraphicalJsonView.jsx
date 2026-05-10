@@ -788,11 +788,11 @@ export default function GraphicalJsonView({ data, errorPath, onPathHover }) {
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-4 px-4 py-2 border-t border-white/10 bg-slate-900/80 overflow-x-auto">
+            <div className="flex items-center gap-6 px-5 py-3 border-t border-white/10 bg-slate-900/90 overflow-x-auto shrink-0">
                 {Object.entries(TYPE_COLORS).map(([type, colors]) => (
-                    <div key={type} className="flex items-center gap-1.5 shrink-0">
-                        <div className={`w-4 h-4 rounded bg-gradient-to-b ${colors.bg} ${colors.border} border`} />
-                        <span className="text-xs text-slate-400 capitalize">{type}</span>
+                    <div key={type} className="flex items-center gap-2 shrink-0">
+                        <div className={`w-3.5 h-3.5 rounded-md bg-gradient-to-b ${colors.bg} ${colors.border} border`} />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{type}</span>
                     </div>
                 ))}
             </div>
