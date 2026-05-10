@@ -81,6 +81,7 @@ export default function App() {
     const [activeTab, setActiveTab] = useState('editor'); // 'editor' or 'tree'
     const [activeErrorLine, setActiveErrorLine] = useState(null);
     const [activeErrorPath, setActiveErrorPath] = useState(null);
+    const [activeIssueIndex, setActiveIssueIndex] = useState(null);
     const [validationConfig, setValidationConfig] = useState({ schemaVersion: 'auto', schemaOnly: false });
     const [customRules, setCustomRules] = useState(null);
     const [autoValidateTrigger, setAutoValidateTrigger] = useState(0);
@@ -240,6 +241,7 @@ export default function App() {
         setIsValidating(true);
         setActiveErrorLine(null);
         setActiveErrorPath(null);
+        setActiveIssueIndex(null);
 
         const authHeader = authType === 'jwt' ? `Bearer ${auth}` : `Basic ${auth}`;
         const newResults = {};
@@ -354,13 +356,15 @@ export default function App() {
         return null;
     };
 
-    const handleIssueClick = (path) => {
-        setActiveErrorPath(path);
-        const line = findLineFromPath(path);
+    const handleIssueClick = (issue, index) => {
+        setActiveErrorPath(issue.path);
+        setActiveIssueIndex(index);
+        
+        // Use backend provided line number if available, else try to find it
+        const line = issue.line_number || findLineFromPath(issue.path);
         if (line) {
             setActiveErrorLine(line);
         }
-        // Fehler werden in allen Ansichten markiert, ohne die aktuelle Ansicht zu wechseln
     };
 
     if (!appLoaded) {
@@ -637,8 +641,12 @@ export default function App() {
                                             {filteredIssues.map((issue, i) => (
                                                 <button
                                                     key={i}
-                                                    onClick={() => handleIssueClick(issue.path)}
-                                                    className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/[0.08] transition-all group relative overflow-hidden"
+                                                    onClick={() => handleIssueClick(issue, i)}
+                                                    className={`w-full text-left p-4 rounded-2xl transition-all group relative overflow-hidden ${
+                                                        activeIssueIndex === i 
+                                                        ? 'bg-indigo-500/10 border-indigo-500/40 ring-1 ring-indigo-500/30 shadow-lg shadow-indigo-500/10' 
+                                                        : 'bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/[0.08]'
+                                                    }`}
                                                 >
                                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${issue.severity === 'ERROR' ? 'bg-rose-500' : 'bg-amber-500'}`} />
                                                     <div className="flex justify-between items-start mb-2">

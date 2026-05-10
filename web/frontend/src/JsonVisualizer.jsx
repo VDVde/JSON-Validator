@@ -284,7 +284,8 @@ export default function JsonVisualizer({ data, errorPath }) {
             });
             setTimeout(() => {
                 if (scrollableRef.current) {
-                    const el = scrollableRef.current.querySelector('.error-highlight, [data-path]');
+                    const targetPath = errorPathSegments.join('.');
+                    const el = scrollableRef.current.querySelector(`[data-path="${targetPath}"]`);
                     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, 300);
