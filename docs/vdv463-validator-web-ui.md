@@ -39,7 +39,8 @@ Sie eignet sich besonders für:
 
 ## Voraussetzungen
 
-- **Docker Desktop** ≥ 24 oder Docker Engine ≥ 24 + Docker Compose v2
+- **Docker** (Engine ≥ 24 + Docker Compose v2 oder Docker Desktop ≥ 24)
+- **OpenSSL** (zum Generieren der Zertifikate)
 - Freie Ports **443** (HTTPS) und **80** (HTTP→Redirect)
 - Für Produktion: gültige SSL-Zertifikate (Let's Encrypt oder kommerziell)
 
@@ -63,6 +64,7 @@ cp .env.example .env
 # .env öffnen und JWT_SECRET_KEY setzen (min. 32 Zeichen)
 
 # 4. Anwendung starten
+# Der erste Start baut das Frontend automatisch im Container (Dauer: ~2-5 Min)
 docker compose up -d
 
 # 5. Browser öffnen

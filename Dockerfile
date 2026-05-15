@@ -1,7 +1,14 @@
-# Optimized Dockerfile for VDV463 Validator
-# This version expects the frontend to be pre-built in web/frontend/dist
+# Multi-stage Dockerfile for VDV463 Validator
 
-# Runtime Stage
+# Stage 1: Build Frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY web/frontend/package*.json ./
+RUN npm install
+COPY web/frontend/ ./
+RUN npm run build
+
+# Stage 2: Runtime Stage
 FROM python:3.12-alpine
 
 # Security: Install security updates
@@ -38,9 +45,8 @@ COPY --chown=validator:validator web/backend ./web/backend
 # Create data directory for SQLite database (writable by validator user)
 RUN mkdir -p ./web/backend/data
 
-# Copy pre-built frontend
-# IMPORTANT: Run 'npm run build' in web/frontend before building this image!
-COPY --chown=validator:validator web/frontend/dist ./web/frontend/dist
+# Copy built frontend from Stage 1
+COPY --from=frontend-builder --chown=validator:validator /app/frontend/dist ./web/frontend/dist
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1

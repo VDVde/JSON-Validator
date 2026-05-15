@@ -108,25 +108,25 @@ operation (DE/EN).
 
 ## Web UI (Docker)
 
-A browser-based validator is available as a Docker container with HTTPS support, JWT authentication, and a full
-validation workflow (upload, validate, filter, export). For complete setup instructions see
-`docs/vdv463-validator-web-ui.md`.
+Ein Browser-basierter Validator steht als Docker-Container zur Verfügung. Er bietet HTTPS-Support, JWT-Authentifizierung und einen vollständigen Validierungs-Workflow.
 
-**Quick start:**
+**Voraussetzungen:** Docker & OpenSSL
+
+**Schnellstart:**
 
 ```bash
-# 1. Generate self-signed certificates (development only)
+# 1. Zertifikate generieren (selbstsigniert)
 .\generate-ssl-certs.ps1      # Windows
 ./generate-ssl-certs.sh       # Linux/macOS
 
-# 2. Configure environment
+# 2. Umgebung konfigurieren
 cp .env.example .env
-# Set JWT_SECRET_KEY in .env (min. 32 chars)
+# JWT_SECRET_KEY in .env setzen (min. 32 Zeichen)
 
-# 3. Start
+# 3. Start (baut das Frontend automatisch im Container)
 docker compose up -d
 
-# 4. Open https://localhost
+# 4. https://localhost öffnen
 ```
 
 For **trusted internal networks** without a login requirement, set `DISABLE_AUTH=true` in `.env`.
