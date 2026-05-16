@@ -36,7 +36,7 @@ from .user_routes import router as auth_router  # noqa: E402
 app = FastAPI(
     title="VDV463 Validator API",
     description="API for validating VDV463 JSON messages with user management",
-    version="3.0.2"
+    version="3.0.4"
 )
 
 # Include authentication and admin routers
