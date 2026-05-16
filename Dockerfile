@@ -39,11 +39,10 @@ RUN pip install --no-cache-dir --user .[docker,web]
 
 # Copy source code with restricted permissions
 COPY --chown=validator:validator src ./src
-COPY --chown=validator:validator schemas ./schemas
 COPY --chown=validator:validator web/backend ./web/backend
 
-# Create data directory for SQLite database (writable by validator user)
-RUN mkdir -p ./web/backend/data
+# Create schemas and data directories
+RUN mkdir -p ./schemas ./web/backend/data && chown validator:validator ./schemas ./web/backend/data
 
 # Copy built frontend from Stage 1
 COPY --from=frontend-builder --chown=validator:validator /app/frontend/dist ./web/frontend/dist
