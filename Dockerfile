@@ -40,8 +40,9 @@ RUN pip install --no-cache-dir --user .[docker,web]
 COPY --chown=validator:validator src ./src
 COPY --chown=validator:validator web/backend ./web/backend
 
-# Create schemas and data directories
-RUN mkdir -p ./schemas ./web/backend/data && chown validator:validator ./schemas ./web/backend/data
+# Create schemas (with version subdirs) and data directories
+RUN mkdir -p ./schemas/v1.0 ./schemas/v1.1 ./schemas/v1.1-dev ./schemas/v2.0 ./web/backend/data \
+    && chown -R validator:validator ./schemas ./web/backend/data
 
 # Copy built frontend from Stage 1
 COPY --from=frontend-builder --chown=validator:validator /app/frontend/dist ./web/frontend/dist
