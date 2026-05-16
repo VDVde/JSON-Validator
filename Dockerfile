@@ -15,15 +15,14 @@ FROM python:3.12-alpine
 RUN apk update && apk upgrade --no-cache \
     && rm -rf /var/cache/apk/*
 
-# Security: Create non-root user with specific UID/GID
+# Security: Create non-root user, app directory, and set permissions
 RUN addgroup -g 1000 validator \
-    && adduser -D -u 1000 -G validator validator
+    && adduser -D -u 1000 -G validator validator \
+    && mkdir -p /home/validator/app \
+    && chown -R validator:validator /home/validator
 
 # Security: Set restrictive file permissions
 WORKDIR /home/validator/app
-
-# Ensure directory is owned by validator user
-RUN chown validator:validator /home/validator/app
 
 # Copy python dependencies first (better layer caching)
 COPY --chown=validator:validator pyproject.toml README.md ./
